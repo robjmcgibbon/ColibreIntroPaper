@@ -9,7 +9,7 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import swiftsimio as sw
-from unyt import mh, cm, Gyr, unyt_array
+import unyt
 from matplotlib.colors import LogNorm
 from matplotlib.animation import FuncAnimation
 plt.style.use('../mnras.mplstyle')
@@ -18,10 +18,17 @@ plt.style.use('../mnras.mplstyle')
 # Specific to this script needed for data generation
 # These are attached as metadata to the data file
 parameters = {
+    # Data generation
     'density_bounds': np.array([10 ** (-9.5), 1e7]),           # in nh/cm^3
     'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),  # in K
     'pressure_bounds': np.array([10 ** (-8.0), 10 ** 8.0]),    # in K/cm^1
+    'internal_energy_bounds': np.array([10 ** (-4), 10 ** 8]), # in (km / s)^2
     'n_bin': 256,
+    # Plotting only
+    'density_xlim': np.array([10 ** (-9.5), 1e7]),             # in nh/cm^3
+    'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),    # in K
+    'pressure_ylim': np.array([10 ** (-8.0), 10 ** 8.0]),      # in K/cm^1
+    'internal_energy_ylim': np.array([10 ** (-4), 10 ** 8]),   # in (km / s)^2
 }
 
 # Parameters passed when running the script
@@ -44,6 +51,16 @@ plot_names = {
         'temperature_bounds',
         'n_bin',
     ],
+    'density_pressure': [
+        'density_bounds', 
+        'pressure_bounds',
+        'n_bin',
+    ],
+    'density_internal_energy': [
+        'density_bounds', 
+        'internal_energy_bounds',
+        'n_bin',
+    ],
 }
 # Check required parameters are valid
 for plot_name, required_params in plot_names.items():
@@ -59,9 +76,13 @@ def load_dataset(dataset_name):
     if dataset_name in datasets:
         pass
     elif dataset_name == 'density':
-        datasets[dataset_name] = (snap.gas.densities.to_physical() / mh).to(cm ** -3).value
+        datasets[dataset_name] = (snap.gas.densities.to_physical() / unyt.mh).to(unyt.cm ** -3).value
     elif dataset_name == 'temperature':
         datasets[dataset_name] = snap.gas.temperatures.to_physical().to("K").value
+    elif dataset_name == 'pressure':
+        datasets[dataset_name] = (snap.gas.pressures.to_physical() / unyt.kb).to(unyt.K * unyt.cm ** -3).value
+    elif dataset_name == 'internal_energy':
+        datasets[dataset_name] = (snap.gas.internal_energies.to_physical()).to(unyt.km ** 2 / unyt.s ** 2).value
     else:
         raise NotImplementedError
     return datasets[dataset_name]
@@ -75,27 +96,40 @@ if args.generate_data:
     snap = sw.load(snap_filename)
 
     for plot_name, required_params in plot_names.items():
+        print(f'Generating data for {plot_name}')
+
+        def load_basic_2Dhistogram(plot_name, dataset_name_x, dataset_name_y):
+            x = load_dataset(dataset_name_x)
+            y = load_dataset(dataset_name_y)
+            x_bins = np.logspace(
+                np.log10(parameters[f'{dataset_name_x}_bounds'][0]), 
+                np.log10(parameters[f'{dataset_name_x}_bounds'][1]), 
+                parameters['n_bin']
+            )
+            y_bins = np.logspace(
+                np.log10(parameters[f'{dataset_name_y}_bounds'][0]), 
+                np.log10(parameters[f'{dataset_name_y}_bounds'][1]), 
+                parameters['n_bin']
+            )
+            hist, x_edges, y_edges = np.histogram2d(
+                x, 
+                y,
+                bins=[x_bins, y_bins],
+            )
+            plot_data[plot_name] = {
+                'hist': hist.T,
+                f'{dataset_name_x}_edges': x_edges,
+                f'{dataset_name_y}_edges': y_edges,
+            }
 
         if plot_name == 'density_temperature':
-            density = load_dataset('density')
-            temperature = load_dataset('temperature')
-
-            density_bins = np.logspace(
-                np.log10(parameters['density_bounds'][0]), np.log10(parameters['density_bounds'][1]), parameters['n_bin']
-            )
-            temperature_bins = np.logspace(
-                np.log10(parameters['temperature_bounds'][0]), np.log10(parameters['temperature_bounds'][1]), parameters['n_bin']
-            )
-            hist, density_edges, temperature_edges = np.histogram2d(
-                density, 
-                temperature,
-                bins=[density_bins, temperature_bins],
-            )
-            plot_data['density_temperature'] = {
-                'hist': hist.T,
-                'density_edges': density_edges,
-                'temperature_edges': temperature_edges,
-            }
+            load_basic_2Dhistogram(plot_name, 'density', 'temperature')
+        elif plot_name == 'density_pressure':
+            load_basic_2Dhistogram(plot_name, 'density', 'pressure')
+        elif plot_name == 'density_internal_energy':
+            load_basic_2Dhistogram(plot_name, 'density', 'internal_energy')
+        else:
+            raise NotImplementedError
 
         # Saving the data
         with h5py.File(data_filename, 'a') as file:
@@ -129,20 +163,45 @@ if args.skip_plotting:
     print('Not plotting data')
     print('Done!')
     exit()
-print('Generating plot')
+print('Generating plots')
 
 
 for plot_name in plot_names:
-    data = plot_data[plot_name]
     fig_w, fig_h = plt.figaspect(1)
     fig, ax = plt.subplots(1, 1, figsize=(fig_w, fig_h))
 
-    ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
-    ax.set_ylabel("Temperature [K]")
+    data = plot_data[plot_name]
+    vmax = np.max(data['hist'])
     ax.loglog()
 
-    vmax = np.max(data['hist'])
-    mappable = ax.pcolormesh(data['density_edges'], data['temperature_edges'], data['hist'], norm=LogNorm(vmin=1, vmax=vmax))
+
+    def plot_basic_2Dhistogram(dataset_name_x, dataset_name_y):
+        mappable = ax.pcolormesh(
+            data[f'{dataset_name_x}_edges'], 
+            data[f'{dataset_name_y}_edges'], 
+            data['hist'], 
+            norm=LogNorm(vmin=1, vmax=vmax)
+        )
+        ax.set_xlim(*parameters[f'{dataset_name_x}_xlim'])
+        ax.set_ylim(*parameters[f'{dataset_name_y}_ylim'])
+        return mappable
+
+    if plot_name == 'density_temperature':
+        mappable = plot_basic_2Dhistogram('density', 'temperature')
+        ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
+        ax.set_ylabel("Temperature [K]")
+    elif plot_name == 'density_pressure':
+        mappable = plot_basic_2Dhistogram('density', 'pressure')
+        ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
+        ax.set_ylabel("Pressure $P / k_B$ [K cm$^{-3}$]")
+    elif plot_name == 'density_internal_energy':
+        mappable = plot_basic_2Dhistogram('density', 'internal_energy')
+        ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
+        ax.set_ylabel("Internal Energy [km$^2$ / s$^2$]")
+
+    else:
+        raise NotImplementedError
+
     ax.text(
         0.025,
         0.975,
@@ -153,9 +212,6 @@ for plot_name in plot_names:
         fontsize=5,
         in_layout=False,
     )
-    ax.set_xlim(*parameters['density_bounds'])
-    ax.set_ylim(*parameters['temperature_bounds'])
-
     fig.colorbar(mappable, ax=ax, label="Number of particles")
     fig.savefig(plot_name+'.png')
 

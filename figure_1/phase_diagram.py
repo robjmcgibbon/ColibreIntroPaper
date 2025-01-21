@@ -10,19 +10,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import swiftsimio as sw
 import unyt
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, Normalize
 from matplotlib.animation import FuncAnimation
 plt.style.use('../mnras.mplstyle')
 
-
-# Specific to this script needed for data generation
-# These are attached as metadata to the data file
 parameters = {
     # Data generation
+    # These are attached as metadata to the data file
     'density_bounds': np.array([10 ** (-9.5), 1e7]),           # in nh/cm^3
     'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),  # in K
     'pressure_bounds': np.array([10 ** (-8.0), 10 ** 8.0]),    # in K/cm^1
     'internal_energy_bounds': np.array([10 ** (-4), 10 ** 8]), # in (km / s)^2
+    'dustfrac_bounds': np.array([-5, -1]),                     # dimensionless
     'n_bin': 256,
     # Plotting only
     'density_xlim': np.array([10 ** (-9.5), 1e7]),             # in nh/cm^3
@@ -61,6 +60,12 @@ plot_names = {
         'internal_energy_bounds',
         'n_bin',
     ],
+    'density_temperature_dustfrac': [
+        'density_bounds', 
+        'temperature_bounds',
+        'n_bin',
+        'dustfrac_bounds',
+    ],
 }
 # Check required parameters are valid
 for plot_name, required_params in plot_names.items():
@@ -83,6 +88,14 @@ def load_dataset(dataset_name):
         datasets[dataset_name] = (snap.gas.pressures.to_physical() / unyt.kb).to(unyt.K * unyt.cm ** -3).value
     elif dataset_name == 'internal_energy':
         datasets[dataset_name] = (snap.gas.internal_energies.to_physical()).to(unyt.km ** 2 / unyt.s ** 2).value
+    elif dataset_name == 'dustfrac':
+        min_dfracs = parameters['dustfrac_bounds'][0]
+        dfracs = np.zeros_like(snap.gas.masses.value)
+        for d in dir(snap.gas.dust_mass_fractions):
+            if hasattr(getattr(snap.gas.dust_mass_fractions, d), "units"):
+                dfracs += getattr(snap.gas.dust_mass_fractions, d)
+        dfracs[dfracs < 10.0 ** min_dfracs] = 10.0 ** min_dfracs
+        datasets[dataset_name] = np.log10(dfracs.value)
     else:
         raise NotImplementedError
     return datasets[dataset_name]
@@ -98,7 +111,13 @@ if args.generate_data:
     for plot_name, required_params in plot_names.items():
         print(f'Generating data for {plot_name}')
 
-        def load_basic_2Dhistogram(plot_name, dataset_name_x, dataset_name_y):
+        def load_2Dhistogram(
+                plot_name,
+                dataset_name_x,
+                dataset_name_y, 
+                dataset_name_weights=None
+            ):
+
             x = load_dataset(dataset_name_x)
             y = load_dataset(dataset_name_y)
             x_bins = np.logspace(
@@ -111,23 +130,46 @@ if args.generate_data:
                 np.log10(parameters[f'{dataset_name_y}_bounds'][1]), 
                 parameters['n_bin']
             )
-            hist, x_edges, y_edges = np.histogram2d(
+            H_norm, x_edges, y_edges = np.histogram2d(
                 x, 
                 y,
                 bins=[x_bins, y_bins],
             )
+            if dataset_name_weights is None:
+                hist = H_norm.T
+            else:
+                weights = load_dataset(dataset_name_weights)
+                H, _, _ = np.histogram2d(
+                    x, 
+                    y,
+                    bins=[x_bins, y_bins], 
+                    weights=weights,
+                )
+                # Set bins with no values to -100 to avoid division by 0
+                mask = H_norm == 0.0
+                H[mask] = -100
+                H_norm[mask] = 1.0
+                hist = (H / H_norm).T
+
             plot_data[plot_name] = {
-                'hist': hist.T,
+                'hist': hist,
                 f'{dataset_name_x}_edges': x_edges,
                 f'{dataset_name_y}_edges': y_edges,
             }
 
         if plot_name == 'density_temperature':
-            load_basic_2Dhistogram(plot_name, 'density', 'temperature')
+            load_2Dhistogram(plot_name, 'density', 'temperature')
         elif plot_name == 'density_pressure':
-            load_basic_2Dhistogram(plot_name, 'density', 'pressure')
+            load_2Dhistogram(plot_name, 'density', 'pressure')
         elif plot_name == 'density_internal_energy':
-            load_basic_2Dhistogram(plot_name, 'density', 'internal_energy')
+            load_2Dhistogram(plot_name, 'density', 'internal_energy')
+        elif plot_name == 'density_temperature_dustfrac':
+            load_2Dhistogram(
+                plot_name, 
+                'density', 
+                'temperature', 
+                dataset_name_weights='dustfrac'
+            )
         else:
             raise NotImplementedError
 
@@ -171,34 +213,46 @@ for plot_name in plot_names:
     fig, ax = plt.subplots(1, 1, figsize=(fig_w, fig_h))
 
     data = plot_data[plot_name]
-    vmax = np.max(data['hist'])
     ax.loglog()
 
 
-    def plot_basic_2Dhistogram(dataset_name_x, dataset_name_y):
+    def plot_2Dhistogram(dataset_name_x, dataset_name_y, norm=None):
+        if norm is None:
+            norm = LogNorm(vmin=1, vmax=np.max(data['hist']))
         mappable = ax.pcolormesh(
             data[f'{dataset_name_x}_edges'], 
             data[f'{dataset_name_y}_edges'], 
-            data['hist'], 
-            norm=LogNorm(vmin=1, vmax=vmax)
+            np.ma.array(data['hist'], mask=data['hist']==-100), 
+            norm=norm
         )
         ax.set_xlim(*parameters[f'{dataset_name_x}_xlim'])
         ax.set_ylim(*parameters[f'{dataset_name_y}_ylim'])
         return mappable
 
     if plot_name == 'density_temperature':
-        mappable = plot_basic_2Dhistogram('density', 'temperature')
+        mappable = plot_2Dhistogram('density', 'temperature')
         ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
         ax.set_ylabel("Temperature [K]")
+        cbar_label = "Number of particles"
     elif plot_name == 'density_pressure':
-        mappable = plot_basic_2Dhistogram('density', 'pressure')
+        mappable = plot_2Dhistogram('density', 'pressure')
         ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
         ax.set_ylabel("Pressure $P / k_B$ [K cm$^{-3}$]")
+        cbar_label = "Number of particles"
     elif plot_name == 'density_internal_energy':
-        mappable = plot_basic_2Dhistogram('density', 'internal_energy')
+        mappable = plot_2Dhistogram('density', 'internal_energy')
         ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
         ax.set_ylabel("Internal Energy [km$^2$ / s$^2$]")
-
+        cbar_label = "Number of particles"
+    elif plot_name == 'density_temperature_dustfrac':
+        norm = Normalize(
+            vmin=parameters['dustfrac_bounds'][0], 
+            vmax=parameters['dustfrac_bounds'][1],
+        )
+        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
+        ax.set_ylabel("Temperature [K]")
+        cbar_label = "Mean (Logarithmic) Dust Mass Fraction"
     else:
         raise NotImplementedError
 
@@ -212,7 +266,7 @@ for plot_name in plot_names:
         fontsize=5,
         in_layout=False,
     )
-    fig.colorbar(mappable, ax=ax, label="Number of particles")
+    fig.colorbar(mappable, ax=ax, label=cbar_label)
     fig.savefig(plot_name+'.png')
 
 print('Done!')

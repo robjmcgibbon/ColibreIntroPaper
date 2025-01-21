@@ -17,14 +17,14 @@ plt.style.use('../mnras.mplstyle')
 parameters = {
     # Data generation
     # These are attached as metadata to the data file
+    'n_bin': 256,
     'density_bounds': np.array([10 ** (-9.5), 1e7]),           # nh/cm^3
     'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),  # K
     'pressure_bounds': np.array([10 ** (-8.0), 10 ** 8.0]),    # K/cm^1
     'internal_energy_bounds': np.array([10 ** (-4), 10 ** 8]), # (km/s)^2
-    'dustfrac_bounds': np.array([-5, -1]),                     # dimensionless (log)
+    'dust_frac_bounds': np.array([-5, -1]),                    # dimensionless (log)
     'metal_frac_bounds': np.array([-6, -1]),                   # dimensionless (log)
     'min_metal_frac': -8,                                      # dimensionless (log)
-    'n_bin': 256,
     # Plotting only
     'density_xlim': np.array([10 ** (-9.5), 1e7]),             # nh/cm^3
     'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),    # K
@@ -62,11 +62,11 @@ plot_names = {
         'internal_energy_bounds',
         'n_bin',
     ],
-    'density_temperature_dustfrac': [
+    'density_temperature_dust_frac': [
         'density_bounds', 
         'temperature_bounds',
         'n_bin',
-        'dustfrac_bounds',
+        'dust_frac_bounds',
     ],
     'density_temperature_metal_frac': [
         'density_bounds', 
@@ -97,18 +97,18 @@ def load_dataset(dataset_name):
         datasets[dataset_name] = (snap.gas.pressures.to_physical() / unyt.kb).to(unyt.K * unyt.cm ** -3).value
     elif dataset_name == 'internal_energy':
         datasets[dataset_name] = (snap.gas.internal_energies.to_physical()).to(unyt.km ** 2 / unyt.s ** 2).value
-    elif dataset_name == 'dustfrac':
-        min_dfracs = parameters['dustfrac_bounds'][0]
+    elif dataset_name == 'dust_frac':
+        min_dfracs = 10 ** parameters['dust_frac_bounds'][0]
         dfracs = np.zeros_like(snap.gas.masses.value)
         for d in dir(snap.gas.dust_mass_fractions):
             if hasattr(getattr(snap.gas.dust_mass_fractions, d), "units"):
                 dfracs += getattr(snap.gas.dust_mass_fractions, d).value
-        dfracs[dfracs < 10.0 ** min_dfracs] = 10.0 ** min_dfracs
+        dfracs[dfracs < min_dfracs] = min_dfracs
         datasets[dataset_name] = np.log10(dfracs)
     elif dataset_name == 'metal_frac':
-        min_metal_frac = parameters['min_metal_frac']
+        min_metal_frac = 10 ** parameters['min_metal_frac']
         metal_frac = snap.gas.metal_mass_fractions.value
-        metal_frac[metal_frac < 10 ** min_metal_frac] = 10 ** min_metal_frac
+        metal_frac[metal_frac < min_metal_frac] = min_metal_frac
         datasets[dataset_name] = np.log10(metal_frac)
     else:
         raise NotImplementedError
@@ -177,12 +177,12 @@ if args.generate_data:
             load_2Dhistogram(plot_name, 'density', 'pressure')
         elif plot_name == 'density_internal_energy':
             load_2Dhistogram(plot_name, 'density', 'internal_energy')
-        elif plot_name == 'density_temperature_dustfrac':
+        elif plot_name == 'density_temperature_dust_frac':
             load_2Dhistogram(
                 plot_name, 
                 'density', 
                 'temperature', 
-                dataset_name_weights='dustfrac'
+                dataset_name_weights='dust_frac'
             )
         elif plot_name == 'density_temperature_metal_frac':
             load_2Dhistogram(
@@ -265,10 +265,10 @@ for plot_name in plot_names:
         ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
         ax.set_ylabel("Internal Energy [km$^2$ / s$^2$]")
         cbar_label = "Number of particles"
-    elif plot_name == 'density_temperature_dustfrac':
+    elif plot_name == 'density_temperature_dust_frac':
         norm = Normalize(
-            vmin=parameters['dustfrac_bounds'][0], 
-            vmax=parameters['dustfrac_bounds'][1],
+            vmin=parameters['dust_frac_bounds'][0], 
+            vmax=parameters['dust_frac_bounds'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
         ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")

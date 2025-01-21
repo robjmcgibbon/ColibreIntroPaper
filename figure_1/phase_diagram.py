@@ -17,17 +17,19 @@ plt.style.use('../mnras.mplstyle')
 parameters = {
     # Data generation
     # These are attached as metadata to the data file
-    'density_bounds': np.array([10 ** (-9.5), 1e7]),           # in nh/cm^3
-    'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),  # in K
-    'pressure_bounds': np.array([10 ** (-8.0), 10 ** 8.0]),    # in K/cm^1
-    'internal_energy_bounds': np.array([10 ** (-4), 10 ** 8]), # in (km / s)^2
-    'dustfrac_bounds': np.array([-5, -1]),                     # dimensionless
+    'density_bounds': np.array([10 ** (-9.5), 1e7]),           # nh/cm^3
+    'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),  # K
+    'pressure_bounds': np.array([10 ** (-8.0), 10 ** 8.0]),    # K/cm^1
+    'internal_energy_bounds': np.array([10 ** (-4), 10 ** 8]), # (km/s)^2
+    'dustfrac_bounds': np.array([-5, -1]),                     # dimensionless (log)
+    'metal_frac_bounds': np.array([-6, -1]),                   # dimensionless (log)
+    'min_metal_frac': -8,                                      # dimensionless (log)
     'n_bin': 256,
     # Plotting only
-    'density_xlim': np.array([10 ** (-9.5), 1e7]),             # in nh/cm^3
-    'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),    # in K
-    'pressure_ylim': np.array([10 ** (-8.0), 10 ** 8.0]),      # in K/cm^1
-    'internal_energy_ylim': np.array([10 ** (-4), 10 ** 8]),   # in (km / s)^2
+    'density_xlim': np.array([10 ** (-9.5), 1e7]),             # nh/cm^3
+    'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),    # K
+    'pressure_ylim': np.array([10 ** (-8.0), 10 ** 8.0]),      # K/cm^1
+    'internal_energy_ylim': np.array([10 ** (-4), 10 ** 8]),   # (km/s)^2
 }
 
 # Parameters passed when running the script
@@ -66,6 +68,13 @@ plot_names = {
         'n_bin',
         'dustfrac_bounds',
     ],
+    'density_temperature_metal_frac': [
+        'density_bounds', 
+        'temperature_bounds',
+        'n_bin',
+        'metal_frac_bounds',
+        'min_metal_frac',
+    ],
 }
 # Check required parameters are valid
 for plot_name, required_params in plot_names.items():
@@ -93,9 +102,14 @@ def load_dataset(dataset_name):
         dfracs = np.zeros_like(snap.gas.masses.value)
         for d in dir(snap.gas.dust_mass_fractions):
             if hasattr(getattr(snap.gas.dust_mass_fractions, d), "units"):
-                dfracs += getattr(snap.gas.dust_mass_fractions, d)
+                dfracs += getattr(snap.gas.dust_mass_fractions, d).value
         dfracs[dfracs < 10.0 ** min_dfracs] = 10.0 ** min_dfracs
-        datasets[dataset_name] = np.log10(dfracs.value)
+        datasets[dataset_name] = np.log10(dfracs)
+    elif dataset_name == 'metal_frac':
+        min_metal_frac = parameters['min_metal_frac']
+        metal_frac = snap.gas.metal_mass_fractions.value
+        metal_frac[metal_frac < 10 ** min_metal_frac] = 10 ** min_metal_frac
+        datasets[dataset_name] = np.log10(metal_frac)
     else:
         raise NotImplementedError
     return datasets[dataset_name]
@@ -169,6 +183,13 @@ if args.generate_data:
                 'density', 
                 'temperature', 
                 dataset_name_weights='dustfrac'
+            )
+        elif plot_name == 'density_temperature_metal_frac':
+            load_2Dhistogram(
+                plot_name, 
+                'density', 
+                'temperature', 
+                dataset_name_weights='metal_frac'
             )
         else:
             raise NotImplementedError
@@ -253,6 +274,15 @@ for plot_name in plot_names:
         ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
         ax.set_ylabel("Temperature [K]")
         cbar_label = "Mean (Logarithmic) Dust Mass Fraction"
+    elif plot_name == 'density_temperature_metal_frac':
+        norm = Normalize(
+            vmin=parameters['metal_frac_bounds'][0], 
+            vmax=parameters['metal_frac_bounds'][1],
+        )
+        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
+        ax.set_ylabel("Temperature [K]")
+        cbar_label = f"Mean (Logarithmic) metal fraction $\\log_{{10}} Z$ (min. $Z=10^{{{parameters['min_metal_frac']}}}$)"
     else:
         raise NotImplementedError
 

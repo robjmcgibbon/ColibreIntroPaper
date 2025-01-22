@@ -1,5 +1,13 @@
 """
-Makes a rho-T plot. Uses the swiftsimio library.
+Makes a phase diagrams. Uses the swiftsimio library.
+
+We have multiple difference types of 2d histograms.
+This script plots them all. It is in two parts. The
+first part loads the data and calculates the histograms.
+The arrays are saved once they are loaded.
+This data, along with any parameters that were used to
+generate it, are written to a file. The second part
+loads the generated histograms and plots them.
 """
 
 import argparse
@@ -44,8 +52,7 @@ parameters['metal_masked_density_xlim'] = parameters['density_xlim']
 parameters['metal_masked_temperature_bounds'] = parameters['temperature_bounds']
 parameters['metal_masked_temperature_ylim'] = parameters['temperature_ylim']
 
-# Parameters passed when running the script
-# These are also attached as metadata to the data file
+# Arguments passed when running the script
 parser = argparse.ArgumentParser()
 base_dir = f'/cosma8/data/dp004/colibre/Runs'
 parser.add_argument('--sim', type=str, required=True, help="Simulation name")
@@ -55,6 +62,8 @@ parser.add_argument('--skip-plotting', action='store_true', help="Whether to ski
 args = parser.parse_args()
 data_filename = args.sim.replace('/', '_') + f'_s{args.snap_nr}_'
 data_filename += os.path.basename(__file__.removesuffix('.py')) + '.hdf5'
+parameters['sim'] = args.sim
+parameters['snap-nr'] = args.snap_nr
 
 # Which phase plots to make, and the parameters required when generating the data
 plot_names = {
@@ -436,7 +445,8 @@ for plot_name in plot_names:
         in_layout=False,
     )
     fig.colorbar(mappable, ax=ax, label=cbar_label)
-    fig.savefig(plot_name+'.png')
+    metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
+    fig.savefig(plot_name+'.png', metadata=metadata)
 
 print('Done!')
 

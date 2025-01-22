@@ -152,11 +152,11 @@ def load_dataset(dataset_name):
         datasets[dataset_name] = np.log10(metal_frac)
     elif dataset_name == 'mass':
         datasets[dataset_name] = snap.gas.masses.to_physical().to("Msun").value
-    elif dataset_name == 'mass_weighted_dust_frac':
+    elif dataset_name == 'dust_mass':
         dfracs = load_dataset('raw_dust_frac')
         mass = load_dataset('mass')
         datasets[dataset_name] = dfracs * mass
-    elif dataset_name == 'mass_weighted_metal_frac':
+    elif dataset_name == 'metal_mass':
         metal_frac = load_dataset('raw_metal_frac')
         mass = load_dataset('mass')
         datasets[dataset_name] = metal_frac * mass
@@ -198,7 +198,7 @@ if args.generate_data:
         print(f'Generating data for {plot_name}')
         t_start = time.time()
 
-        def load_2Dhistogram(
+        def create_2Dhistogram(
                 plot_name,
                 dataset_name_x,
                 dataset_name_y, 
@@ -268,35 +268,35 @@ if args.generate_data:
             }
 
         if plot_name == 'density_temperature':
-            load_2Dhistogram(plot_name, 'density', 'temperature')
+            create_2Dhistogram(plot_name, 'density', 'temperature')
         elif plot_name == 'density_pressure':
-            load_2Dhistogram(plot_name, 'density', 'pressure')
+            create_2Dhistogram(plot_name, 'density', 'pressure')
         elif plot_name == 'density_internal_energy':
-            load_2Dhistogram(plot_name, 'density', 'internal_energy')
+            create_2Dhistogram(plot_name, 'density', 'internal_energy')
         elif plot_name == 'density_temperature_dust_frac':
-            load_2Dhistogram(
+            create_2Dhistogram(
                 plot_name, 
                 'density', 
                 'temperature', 
                 dataset_name_weights_2='dust_frac',
             )
         elif plot_name == 'density_temperature_metal_frac':
-            load_2Dhistogram(
+            create_2Dhistogram(
                 plot_name, 
                 'density', 
                 'temperature', 
                 dataset_name_weights_2='metal_frac',
             )
         elif plot_name == 'density_temperature_dust_to_metal':
-            load_2Dhistogram(
+            create_2Dhistogram(
                 plot_name, 
                 'density', 
                 'temperature', 
-                dataset_name_weights_1='mass_weighted_metal_frac',
-                dataset_name_weights_2='mass_weighted_dust_frac',
+                dataset_name_weights_1='metal_mass',
+                dataset_name_weights_2='dust_mass',
             )
         elif plot_name == 'density_temperature_mean_dust_to_mean_metal':
-            load_2Dhistogram(
+            create_2Dhistogram(
                 plot_name, 
                 'metal_masked_density', 
                 'metal_masked_temperature', 
@@ -304,7 +304,7 @@ if args.generate_data:
                 dataset_name_weights_2='metal_masked_dust_frac',
             )
         elif plot_name == 'density_temperature_sf_frac':
-            load_2Dhistogram(
+            create_2Dhistogram(
                 plot_name, 
                 'density', 
                 'temperature', 
@@ -362,7 +362,6 @@ for plot_name in plot_names:
 
     data = plot_data[plot_name]
     ax.loglog()
-
 
     def plot_2Dhistogram(dataset_name_x, dataset_name_y, norm=None):
         if norm is None:
@@ -434,6 +433,7 @@ for plot_name in plot_names:
     else:
         raise NotImplementedError
 
+    # Add name of simulation to plots
     ax.text(
         0.025,
         0.975,
@@ -444,6 +444,7 @@ for plot_name in plot_names:
         fontsize=5,
         in_layout=False,
     )
+
     fig.colorbar(mappable, ax=ax, label=cbar_label)
     metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
     fig.savefig(plot_name+'.png', metadata=metadata)

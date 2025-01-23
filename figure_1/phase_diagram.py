@@ -42,8 +42,10 @@ parameters = {
     'internal_energy_ylim': np.array([10 ** (-4), 10 ** 8]),    # (km/s)^2
     'metal_frac_cbar_lim': np.array([-6, -1]),                  # dimensionless (log)
     'dust_frac_cbar_lim': np.array([-5, -1]),                   # dimensionless (log)
+    # TODO: Not consistent with pipeline
     'dust_to_metal_cbar_lim': np.array([2e-2, 1]),              # dimensionless
     'mean_dust_to_mean_metal_cbar_lim': np.array([1e-3, 1e-1]), # dimensionless
+    # TODO: Set lower limit to 1e-2
     'sf_frac_cbar_lim': np.array([3e-2, 1]),                    # dimensionless
 }
 # These bounds should be copies of the usual values
@@ -130,41 +132,46 @@ def load_dataset(dataset_name):
     elif dataset_name == 'temperature':
         datasets[dataset_name] = snap.gas.temperatures.to_physical().to("K").value
     elif dataset_name == 'pressure':
-        datasets[dataset_name] = (snap.gas.pressures.to_physical() / unyt.kb).to(unyt.K * unyt.cm ** -3).value
+        # Avoid overflows
+        pressure = snap.gas.pressures.to_physical().astype('float64')
+        datasets[dataset_name] = (pressure / unyt.kb).to(unyt.K * unyt.cm ** -3).value
     elif dataset_name == 'internal_energy':
         datasets[dataset_name] = (snap.gas.internal_energies.to_physical()).to(unyt.km ** 2 / unyt.s ** 2).value
-    elif dataset_name == 'raw_dust_frac':
+    elif dataset_name == 'mass':
+        datasets[dataset_name] = snap.gas.masses.to_physical().to("Msun").value
+    # Dust
+    elif dataset_name == 'dust_frac':
         dfracs = np.zeros_like(snap.gas.masses.value)
         for col in snap.gas.dust_mass_fractions.named_columns:
             dfracs += getattr(snap.gas.dust_mass_fractions, col).value
         datasets[dataset_name] = dfracs
-    elif dataset_name == 'dust_frac':
+    elif dataset_name == 'floor_dust_frac':
         min_dfracs = 10 ** parameters['min_dust_frac']
-        dfracs = load_dataset('raw_dust_frac').copy()
+        dfracs = load_dataset('dust_frac').copy()
         dfracs[dfracs < min_dfracs] = min_dfracs
         datasets[dataset_name] = np.log10(dfracs)
-    elif dataset_name == 'raw_metal_frac':
-        datasets[dataset_name] = snap.gas.metal_mass_fractions.value
-    elif dataset_name == 'metal_frac':
-        min_metal_frac = 10 ** parameters['min_metal_frac']
-        metal_frac = load_dataset('raw_metal_frac').copy()
-        metal_frac[metal_frac < min_metal_frac] = min_metal_frac
-        datasets[dataset_name] = np.log10(metal_frac)
-    elif dataset_name == 'mass':
-        datasets[dataset_name] = snap.gas.masses.to_physical().to("Msun").value
     elif dataset_name == 'dust_mass':
-        dfracs = load_dataset('raw_dust_frac')
+        dfracs = load_dataset('dust_frac')
         mass = load_dataset('mass')
         datasets[dataset_name] = dfracs * mass
+    # Metals
+    elif dataset_name == 'metal_frac':
+        datasets[dataset_name] = snap.gas.metal_mass_fractions.value
+    elif dataset_name == 'floor_metal_frac':
+        min_metal_frac = 10 ** parameters['min_metal_frac']
+        metal_frac = load_dataset('metal_frac').copy()
+        metal_frac[metal_frac < min_metal_frac] = min_metal_frac
+        datasets[dataset_name] = np.log10(metal_frac)
     elif dataset_name == 'metal_mass':
-        metal_frac = load_dataset('raw_metal_frac')
+        metal_frac = load_dataset('metal_frac')
         mass = load_dataset('mass')
         datasets[dataset_name] = metal_frac * mass
+    # Masked
     elif dataset_name == 'sf_mask':
         sfr = snap.gas.star_formation_rates.to("Msun/yr").value
         datasets[dataset_name] = sfr > 0.0
     elif dataset_name == 'metal_mask':
-        metal_frac = load_dataset('raw_metal_frac')
+        metal_frac = load_dataset('metal_frac')
         min_metal_frac = 10 ** parameters['min_metal_frac']
         datasets[dataset_name] = metal_frac > min_metal_frac
     elif dataset_name == 'metal_masked_density':
@@ -175,11 +182,11 @@ def load_dataset(dataset_name):
         datasets[dataset_name] = load_dataset('temperature')[mask]
     elif dataset_name == 'metal_masked_metal_frac':
         mask = load_dataset('metal_mask')
-        datasets[dataset_name] = load_dataset('raw_metal_frac')[mask]
+        datasets[dataset_name] = load_dataset('metal_frac')[mask]
     elif dataset_name == 'metal_masked_dust_frac':
         mask = load_dataset('metal_mask')
         min_dfracs = 10 ** parameters['min_dust_frac']
-        dfracs = load_dataset('raw_dust_frac').copy()
+        dfracs = load_dataset('dust_frac').copy()
         dfracs[dfracs < min_dfracs] = min_dfracs
         datasets[dataset_name] = dfracs[mask]
     else:
@@ -278,14 +285,14 @@ if args.generate_data:
                 plot_name, 
                 'density', 
                 'temperature', 
-                dataset_name_weights_2='dust_frac',
+                dataset_name_weights_2='floor_dust_frac',
             )
         elif plot_name == 'density_temperature_metal_frac':
             create_2Dhistogram(
                 plot_name, 
                 'density', 
                 'temperature', 
-                dataset_name_weights_2='metal_frac',
+                dataset_name_weights_2='floor_metal_frac',
             )
         elif plot_name == 'density_temperature_dust_to_metal':
             create_2Dhistogram(

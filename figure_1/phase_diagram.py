@@ -30,29 +30,15 @@ parameters = {
     'n_bin': 256,
     'density_bounds': np.array([10 ** (-9.5), 1e7]),            # nh/cm^3
     'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),   # K
-    'pressure_bounds': np.array([10 ** (-8.0), 10 ** 8.0]),     # K/cm^1
-    'internal_energy_bounds': np.array([10 ** (-4), 10 ** 8]),  # (km/s)^2
-    # TODO: Consistent for different plots
-    'min_dust_frac': -10,                                       # dimensionless (log)
+    'pressure_bounds': np.array([10 ** (-8.0), 10 ** 16.0]),    # K/cm^1
     'min_metal_frac': -8,                                       # dimensionless (log)
     # Plotting only
     'density_xlim': np.array([10 ** (-9.5), 1e7]),              # nh/cm^3
     'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),     # K
-    'pressure_ylim': np.array([10 ** (-8.0), 10 ** 8.0]),       # K/cm^1
-    'internal_energy_ylim': np.array([10 ** (-4), 10 ** 8]),    # (km/s)^2
+    'pressure_ylim': np.array([10 ** (-8.0), 10 ** 16.0]),      # K/cm^1
     'metal_frac_cbar_lim': np.array([-6, -1]),                  # dimensionless (log)
-    'dust_frac_cbar_lim': np.array([-5, -1]),                   # dimensionless (log)
-    # TODO: Not consistent with pipeline
-    'dust_to_metal_cbar_lim': np.array([2e-2, 1]),              # dimensionless
-    'mean_dust_to_mean_metal_cbar_lim': np.array([1e-3, 1e-1]), # dimensionless
-    # TODO: Set lower limit to 1e-2
-    'sf_frac_cbar_lim': np.array([3e-2, 1]),                    # dimensionless
+    'dust_to_metal_cbar_lim': np.array([1e-2, 7e-1]),           # dimensionless
 }
-# These bounds should be copies of the usual values
-parameters['metal_masked_density_bounds'] = parameters['density_bounds']
-parameters['metal_masked_density_xlim'] = parameters['density_xlim']
-parameters['metal_masked_temperature_bounds'] = parameters['temperature_bounds']
-parameters['metal_masked_temperature_ylim'] = parameters['temperature_ylim']
 
 # Arguments passed when running the script
 parser = argparse.ArgumentParser()
@@ -79,17 +65,6 @@ plot_names = {
         'density_bounds',
         'pressure_bounds',
     ],
-    'density_internal_energy': [
-        'n_bin',
-        'density_bounds',
-        'internal_energy_bounds',
-    ],
-    'density_temperature_dust_frac': [
-        'n_bin',
-        'density_bounds',
-        'temperature_bounds',
-        'min_dust_frac',
-    ],
     'density_temperature_metal_frac': [
         'n_bin',
         'density_bounds',
@@ -97,18 +72,6 @@ plot_names = {
         'min_metal_frac',
     ],
     'density_temperature_dust_to_metal': [
-        'n_bin',
-        'density_bounds',
-        'temperature_bounds',
-    ],
-    'density_temperature_mean_dust_to_mean_metal': [
-        'n_bin',
-        'metal_masked_density_bounds', 
-        'metal_masked_temperature_bounds',
-        'min_dust_frac',
-        'min_metal_frac',
-    ],
-    'density_temperature_sf_frac': [
         'n_bin',
         'density_bounds',
         'temperature_bounds',
@@ -135,8 +98,6 @@ def load_dataset(dataset_name):
         # Avoid overflows
         pressure = snap.gas.pressures.to_physical().astype('float64')
         datasets[dataset_name] = (pressure / unyt.kb).to(unyt.K * unyt.cm ** -3).value
-    elif dataset_name == 'internal_energy':
-        datasets[dataset_name] = (snap.gas.internal_energies.to_physical()).to(unyt.km ** 2 / unyt.s ** 2).value
     elif dataset_name == 'mass':
         datasets[dataset_name] = snap.gas.masses.to_physical().to("Msun").value
     # Dust
@@ -145,11 +106,6 @@ def load_dataset(dataset_name):
         for col in snap.gas.dust_mass_fractions.named_columns:
             dfracs += getattr(snap.gas.dust_mass_fractions, col).value
         datasets[dataset_name] = dfracs
-    elif dataset_name == 'floor_dust_frac':
-        min_dfracs = 10 ** parameters['min_dust_frac']
-        dfracs = load_dataset('dust_frac').copy()
-        dfracs[dfracs < min_dfracs] = min_dfracs
-        datasets[dataset_name] = np.log10(dfracs)
     elif dataset_name == 'dust_mass':
         dfracs = load_dataset('dust_frac')
         mass = load_dataset('mass')
@@ -166,29 +122,6 @@ def load_dataset(dataset_name):
         metal_frac = load_dataset('metal_frac')
         mass = load_dataset('mass')
         datasets[dataset_name] = metal_frac * mass
-    # Masked
-    elif dataset_name == 'sf_mask':
-        sfr = snap.gas.star_formation_rates.to("Msun/yr").value
-        datasets[dataset_name] = sfr > 0.0
-    elif dataset_name == 'metal_mask':
-        metal_frac = load_dataset('metal_frac')
-        min_metal_frac = 10 ** parameters['min_metal_frac']
-        datasets[dataset_name] = metal_frac > min_metal_frac
-    elif dataset_name == 'metal_masked_density':
-        mask = load_dataset('metal_mask')
-        datasets[dataset_name] = load_dataset('density')[mask]
-    elif dataset_name == 'metal_masked_temperature':
-        mask = load_dataset('metal_mask')
-        datasets[dataset_name] = load_dataset('temperature')[mask]
-    elif dataset_name == 'metal_masked_metal_frac':
-        mask = load_dataset('metal_mask')
-        datasets[dataset_name] = load_dataset('metal_frac')[mask]
-    elif dataset_name == 'metal_masked_dust_frac':
-        mask = load_dataset('metal_mask')
-        min_dfracs = 10 ** parameters['min_dust_frac']
-        dfracs = load_dataset('dust_frac').copy()
-        dfracs[dfracs < min_dfracs] = min_dfracs
-        datasets[dataset_name] = dfracs[mask]
     else:
         raise NotImplementedError
     return datasets[dataset_name]
@@ -211,7 +144,6 @@ if args.generate_data:
                 dataset_name_y, 
                 dataset_name_weights_1=None,
                 dataset_name_weights_2=None,
-                dataset_name_mask=None,
             ):
 
             x = load_dataset(dataset_name_x)
@@ -243,25 +175,16 @@ if args.generate_data:
                 )
 
             if dataset_name_weights_2 is None:
-                assert dataset_name_mask is None
+                # We just want histogram of counts
                 hist = H_norm.T
             else:
                 weights = load_dataset(dataset_name_weights_2)
-                if dataset_name_mask is None:
-                    H, _, _ = np.histogram2d(
-                        x, 
-                        y,
-                        bins=[x_bins, y_bins], 
-                        weights=weights,
-                    )
-                else:
-                    mask = load_dataset(dataset_name_mask)
-                    H, _, _ = np.histogram2d(
-                        x[mask], 
-                        y[mask],
-                        bins=[x_bins, y_bins], 
-                        weights=weights[mask],
-                    )
+                H, _, _ = np.histogram2d(
+                    x, 
+                    y,
+                    bins=[x_bins, y_bins], 
+                    weights=weights,
+                )
                 # Set bins with no values to -100 to avoid division by 0
                 invalid = H_norm == 0.0
                 H[invalid] = -100
@@ -278,15 +201,6 @@ if args.generate_data:
             create_2Dhistogram(plot_name, 'density', 'temperature')
         elif plot_name == 'density_pressure':
             create_2Dhistogram(plot_name, 'density', 'pressure')
-        elif plot_name == 'density_internal_energy':
-            create_2Dhistogram(plot_name, 'density', 'internal_energy')
-        elif plot_name == 'density_temperature_dust_frac':
-            create_2Dhistogram(
-                plot_name, 
-                'density', 
-                'temperature', 
-                dataset_name_weights_2='floor_dust_frac',
-            )
         elif plot_name == 'density_temperature_metal_frac':
             create_2Dhistogram(
                 plot_name, 
@@ -301,23 +215,6 @@ if args.generate_data:
                 'temperature', 
                 dataset_name_weights_1='metal_mass',
                 dataset_name_weights_2='dust_mass',
-            )
-        elif plot_name == 'density_temperature_mean_dust_to_mean_metal':
-            create_2Dhistogram(
-                plot_name, 
-                'metal_masked_density', 
-                'metal_masked_temperature', 
-                dataset_name_weights_1='metal_masked_metal_frac',
-                dataset_name_weights_2='metal_masked_dust_frac',
-            )
-        elif plot_name == 'density_temperature_sf_frac':
-            create_2Dhistogram(
-                plot_name, 
-                'density', 
-                'temperature', 
-                dataset_name_weights_1='mass',
-                dataset_name_weights_2='mass',
-                dataset_name_mask ='sf_mask',
             )
         else:
             raise NotImplementedError
@@ -394,17 +291,6 @@ for plot_name in plot_names:
         mappable = plot_2Dhistogram('density', 'pressure')
         ax.set_ylabel("Pressure $P / k_B$ [K cm$^{-3}$]")
         cbar_label = "Number of particles"
-    elif plot_name == 'density_internal_energy':
-        mappable = plot_2Dhistogram('density', 'internal_energy')
-        ax.set_ylabel("Internal Energy [km$^2$ / s$^2$]")
-        cbar_label = "Number of particles"
-    elif plot_name == 'density_temperature_dust_frac':
-        norm = Normalize(
-            vmin=parameters['dust_frac_cbar_lim'][0], 
-            vmax=parameters['dust_frac_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = "Mean (Logarithmic) Dust Mass Fraction"
     elif plot_name == 'density_temperature_metal_frac':
         norm = Normalize(
             vmin=parameters['metal_frac_cbar_lim'][0], 
@@ -419,24 +305,6 @@ for plot_name in plot_names:
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
         cbar_label = f"Dust to Metal Ratio"
-    elif plot_name == 'density_temperature_mean_dust_to_mean_metal':
-        norm = LogNorm(
-            vmin=parameters['mean_dust_to_mean_metal_cbar_lim'][0], 
-            vmax=parameters['mean_dust_to_mean_metal_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram(
-            'metal_masked_density', 
-            'metal_masked_temperature', 
-            norm=norm
-        )
-        cbar_label = f"Mean Dust / Metals Ratio []"
-    elif plot_name == 'density_temperature_sf_frac':
-        norm = LogNorm(
-            vmin=parameters['sf_frac_cbar_lim'][0], 
-            vmax=parameters['sf_frac_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = f"Mass Fraction of Star-Forming Gas"
     else:
         raise NotImplementedError
 

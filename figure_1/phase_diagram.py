@@ -35,7 +35,7 @@ parameters = {
     # Plotting only
     'density_xlim': np.array([10 ** (-9.5), 1e7]),              # nh/cm^3
     'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),     # K
-    'pressure_ylim': np.array([10 ** (-8.0), 10 ** 16.0]),      # K/cm^1
+    'pressure_ylim': np.array([10 ** (-8.0), 10 ** 12.0]),      # K/cm^1
     'metallicity_cbar_lim': np.array([-4, 1]),                  # dimensionless (log)
     'dust_to_metal_cbar_lim': np.array([1e-2, 7e-1]),           # dimensionless
     'HI_frac_cbar_lim': np.array([1e-3, 1]),                    # dimensionless
@@ -282,8 +282,7 @@ print('Generating plots')
 
 
 for plot_name in plot_names:
-    fig_w, fig_h = plt.figaspect(1)
-    fig, ax = plt.subplots(1, 1, figsize=(fig_w, fig_h))
+    fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
 
     data = plot_data[plot_name]
     ax.loglog()
@@ -302,7 +301,7 @@ for plot_name in plot_names:
         return mappable
 
     # Most plot are density temperture, so set as defaults
-    ax.set_xlabel("Density [$n_H$ cm$^{-3}$]")
+    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
     ax.set_ylabel("Temperature [K]")
 
     if plot_name == 'density_temperature':
@@ -318,7 +317,7 @@ for plot_name in plot_names:
             vmax=parameters['metallicity_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = r"$\left<\frac{Z}{Z_{\odot}}\right>$"
+        cbar_label = r"$\left<\left[\frac{Z}{Z_{\odot}}\right]\right>$"
         cbar_label += f'(min $10^{{{parameters["min_metallicity"]}}}$)'
     elif plot_name == 'density_temperature_dust_to_metal':
         norm = LogNorm(
@@ -351,7 +350,8 @@ for plot_name in plot_names:
 
     fig.colorbar(mappable, ax=ax, label=cbar_label)
     metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
-    fig.savefig(plot_name+'.png', bbox_inches='tight', metadata=metadata)
+    plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
+    fig.savefig(plot_name+'.png', metadata=metadata)
 
 print('Done!')
 

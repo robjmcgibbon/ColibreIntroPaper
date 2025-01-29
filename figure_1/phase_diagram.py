@@ -31,14 +31,14 @@ parameters = {
     'density_bounds': np.array([10 ** (-9.5), 1e7]),            # nh/cm^3
     'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),   # K
     'pressure_bounds': np.array([10 ** (-8.0), 10 ** 16.0]),    # K/cm^1
-    'min_metal_frac': -8,                                       # dimensionless (log)
+    'min_metallicity': -4,                                      # dimensionless (log)
     # Plotting only
     'density_xlim': np.array([10 ** (-9.5), 1e7]),              # nh/cm^3
     'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),     # K
     'pressure_ylim': np.array([10 ** (-8.0), 10 ** 16.0]),      # K/cm^1
-    'metal_frac_cbar_lim': np.array([-6, -1]),                  # dimensionless (log)
+    'metallicity_cbar_lim': np.array([-4, 1]),                  # dimensionless (log)
     'dust_to_metal_cbar_lim': np.array([1e-2, 7e-1]),           # dimensionless
-    'HI_frac_cbar_lim': np.array([1e-2, 1]),                    # dimensionless
+    'HI_frac_cbar_lim': np.array([1e-3, 1]),                    # dimensionless
 }
 
 # Arguments passed when running the script
@@ -66,11 +66,11 @@ plot_names = {
         'density_bounds',
         'pressure_bounds',
     ],
-    'density_temperature_metal_frac': [
+    'density_temperature_metallicity': [
         'n_bin',
         'density_bounds',
         'temperature_bounds',
-        'min_metal_frac',
+        'min_metallicity',
     ],
     'density_temperature_dust_to_metal': [
         'n_bin',
@@ -119,11 +119,12 @@ def load_dataset(dataset_name):
     # Metals
     elif dataset_name == 'metal_frac':
         datasets[dataset_name] = snap.gas.metal_mass_fractions.value
-    elif dataset_name == 'floor_metal_frac':
-        min_metal_frac = 10 ** parameters['min_metal_frac']
-        metal_frac = load_dataset('metal_frac').copy()
-        metal_frac[metal_frac < min_metal_frac] = min_metal_frac
-        datasets[dataset_name] = np.log10(metal_frac)
+    elif dataset_name == 'floor_metallicity':
+        solar_metal_frac = 0.0134
+        min_metallicity = 10 ** parameters['min_metallicity']
+        metallicity = load_dataset('metal_frac').copy() / solar_metal_frac
+        metallicity[metallicity < min_metallicity] = min_metallicity
+        datasets[dataset_name] = np.log10(metallicity)
     elif dataset_name == 'metal_mass':
         metal_frac = load_dataset('metal_frac')
         mass = load_dataset('mass')
@@ -213,12 +214,12 @@ if args.generate_data:
             create_2Dhistogram(plot_name, 'density', 'temperature')
         elif plot_name == 'density_pressure':
             create_2Dhistogram(plot_name, 'density', 'pressure')
-        elif plot_name == 'density_temperature_metal_frac':
+        elif plot_name == 'density_temperature_metallicity':
             create_2Dhistogram(
                 plot_name, 
                 'density', 
                 'temperature', 
-                dataset_name_weights_2='floor_metal_frac',
+                dataset_name_weights_2='floor_metallicity',
             )
         elif plot_name == 'density_temperature_dust_to_metal':
             create_2Dhistogram(
@@ -311,13 +312,14 @@ for plot_name in plot_names:
         mappable = plot_2Dhistogram('density', 'pressure')
         ax.set_ylabel("Pressure $P / k_B$ [K cm$^{-3}$]")
         cbar_label = "Number of particles"
-    elif plot_name == 'density_temperature_metal_frac':
+    elif plot_name == 'density_temperature_metallicity':
         norm = Normalize(
-            vmin=parameters['metal_frac_cbar_lim'][0], 
-            vmax=parameters['metal_frac_cbar_lim'][1],
+            vmin=parameters['metallicity_cbar_lim'][0], 
+            vmax=parameters['metallicity_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = f"Mean (Logarithmic) metal fraction $\\log_{{10}} Z$ (min. $Z=10^{{{parameters['min_metal_frac']}}}$)"
+        cbar_label = r"$\left<\frac{Z}{Z_{\odot}}\right>$"
+        cbar_label += f'(min $10^{{{parameters["min_metallicity"]}}}$)'
     elif plot_name == 'density_temperature_dust_to_metal':
         norm = LogNorm(
             vmin=parameters['dust_to_metal_cbar_lim'][0], 

@@ -38,6 +38,7 @@ parameters = {
     'pressure_ylim': np.array([10 ** (-8.0), 10 ** 16.0]),      # K/cm^1
     'metal_frac_cbar_lim': np.array([-6, -1]),                  # dimensionless (log)
     'dust_to_metal_cbar_lim': np.array([1e-2, 7e-1]),           # dimensionless
+    'HI_frac_cbar_lim': np.array([1e-2, 1]),                    # dimensionless
 }
 
 # Arguments passed when running the script
@@ -72,6 +73,11 @@ plot_names = {
         'min_metal_frac',
     ],
     'density_temperature_dust_to_metal': [
+        'n_bin',
+        'density_bounds',
+        'temperature_bounds',
+    ],
+    'density_temperature_HI_frac': [
         'n_bin',
         'density_bounds',
         'temperature_bounds',
@@ -122,6 +128,12 @@ def load_dataset(dataset_name):
         metal_frac = load_dataset('metal_frac')
         mass = load_dataset('mass')
         datasets[dataset_name] = metal_frac * mass
+    # HI
+    elif dataset_name == 'hydrogen_frac':
+        datasets[dataset_name] = snap.gas.element_mass_fractions.hydrogen.value
+    elif dataset_name == 'HI_mass':
+        sfrac = snap.gas.species_fractions.HI.value * load_dataset('hydrogen_frac')
+        datasets[dataset_name] = sfrac * load_dataset('mass')
     else:
         raise NotImplementedError
     return datasets[dataset_name]
@@ -216,6 +228,14 @@ if args.generate_data:
                 dataset_name_weights_1='metal_mass',
                 dataset_name_weights_2='dust_mass',
             )
+        elif plot_name == 'density_temperature_HI_frac':
+            create_2Dhistogram(
+                plot_name, 
+                'density', 
+                'temperature', 
+                dataset_name_weights_1='mass',
+                dataset_name_weights_2='HI_mass',
+            )
         else:
             raise NotImplementedError
 
@@ -305,6 +325,13 @@ for plot_name in plot_names:
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
         cbar_label = f"Dust to Metal Ratio"
+    elif plot_name == 'density_temperature_HI_frac':
+        norm = LogNorm(
+            vmin=parameters['HI_frac_cbar_lim'][0], 
+            vmax=parameters['HI_frac_cbar_lim'][1],
+        )
+        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        cbar_label = f"HI Mass Fraction"
     else:
         raise NotImplementedError
 
@@ -322,7 +349,7 @@ for plot_name in plot_names:
 
     fig.colorbar(mappable, ax=ax, label=cbar_label)
     metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
-    fig.savefig(plot_name+'.png', metadata=metadata)
+    fig.savefig(plot_name+'.png', bbox_inches='tight', metadata=metadata)
 
 print('Done!')
 

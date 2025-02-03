@@ -1,3 +1,5 @@
 *.png
 *.pdf
 *.hdf5
+
+pipeline-configs/

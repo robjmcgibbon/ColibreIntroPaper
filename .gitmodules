@@ -1,0 +1,4 @@
+[submodule "velociraptor-comparison-data"]
+	path = velociraptor-comparison-data
+	url = git@github.com:SWIFTSIM/velociraptor-comparison-data.git
+    branch = master

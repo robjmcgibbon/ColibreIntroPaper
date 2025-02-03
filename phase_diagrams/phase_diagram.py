@@ -352,6 +352,7 @@ for plot_name in plot_names:
     metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
     plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
     fig.savefig(plot_name+'.png', metadata=metadata)
+    plt.close()
 
 print('Done!')
 

@@ -22,37 +22,43 @@ parser = argparse.ArgumentParser()
 # TODO
 #base_dir = f'/cosma8/data/dp004/colibre/Runs'
 base_dir = f'/net/hypernova/data2/COLIBRE'
-parser.add_argument('--sim', type=str, required=True, help="Simulation name")
+parser.add_argument('--sims', nargs='+', type=str, required=True, help="Simulation names")
 args = parser.parse_args()
 
-snapshot_filename = f'{base_dir}/{args.sim}/snapshots/colibre_0127/colibre_0127.hdf5'
-SNIa_filename = f'{base_dir}/{args.sim}/SNIa.txt'
 
 # Plot setup
 fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
 ax.semilogx()
-# TODO:
 log_multiplicative_factor = 4
 multiplicative_factor = 10 ** log_multiplicative_factor
 SNIa_rate_output_units = 1.0 / (unyt.yr * unyt.Mpc ** 3)
 
-# Load data from SNIa file
-data = np.loadtxt(
-    SNIa_filename,
-    usecols=(4, 6, 11),
-    dtype=[("a", np.float32), ("z", np.float32), ("SNIa rate", np.float32)],
-)
+# Loop through simulations
+for sim in args.sims:
+    snapshot_filename = f'{base_dir}/{sim}/snapshots/colibre_0127/colibre_0127.hdf5'
+    SNIa_filename = f'{base_dir}/{sim}/SNIa.txt'
 
-# Load units and cosmology from snapshot
-snapshot = sw.load(snapshot_filename)
-cosmology = snapshot.metadata.cosmology
-units = snapshot.units
-SNIa_rate_units = 1.0 / (units.time * units.length ** 3)
+    # Load data from SNIa file
+    # Exlcude final bin
+    data = np.loadtxt(
+        SNIa_filename,
+        usecols=(4, 6, 11),
+        dtype=[("a", np.float32), ("z", np.float32), ("SNIa rate", np.float32)],
+    )[:-1]
 
-# Plot simulation data, use high z-order so it's on top of observations
-scale_factor = data["a"]
-SNIa_rate = (data["SNIa rate"] * SNIa_rate_units).to(SNIa_rate_output_units)
-ax.plot(scale_factor, SNIa_rate.value * multiplicative_factor, zorder=10000)[0]
+    # Load units and cosmology from snapshot
+    snapshot = sw.load(snapshot_filename)
+    cosmology = snapshot.metadata.cosmology
+    units = snapshot.units
+    SNIa_rate_units = 1.0 / (units.time * units.length ** 3)
+
+    # Plot simulation data, use high z-order so it's on top of observations
+    scale_factor = data["a"]
+    SNIa_rate = (data["SNIa rate"] * SNIa_rate_units).to(SNIa_rate_output_units)
+    # TODO:
+    label = sim
+    ax.plot(scale_factor, SNIa_rate.value * multiplicative_factor, label=sim, zorder=10000)
+ax.legend()
 
 # Plot observational data
 path_to_obs_data = f"../velociraptor-comparison-data"
@@ -103,18 +109,6 @@ ax.set_xticklabels(redshift_labels)
 #    observation_lines, observation_labels, markerfirst=True, loc="center right"
 #)
 #ax.add_artist(observation_legend)
-
-# Add name of simulation to plots
-ax.text(
-    0.025,
-    0.975,
-    args.sim,
-    ha="left",
-    va="top",
-    transform=ax.transAxes,
-    fontsize=5,
-    in_layout=False,
-)
 
 # Create second X-axis (to plot cosmic time alongside redshift)
 ax2 = ax.twiny()

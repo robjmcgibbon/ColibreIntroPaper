@@ -17,11 +17,11 @@ import unyt
 from velociraptor.observations import load_observations
 plt.style.use('../mnras.mplstyle')
 
+import helpers
+
 # Arguments passed when running the script
 parser = argparse.ArgumentParser()
-# TODO
-#base_dir = f'/cosma8/data/dp004/colibre/Runs'
-base_dir = f'/net/hypernova/data2/COLIBRE'
+base_dir = f'/cosma8/data/dp004/colibre/Runs'
 parser.add_argument('--sims', nargs='+', type=str, required=True, help="Simulation names")
 args = parser.parse_args()
 
@@ -35,7 +35,7 @@ SNIa_rate_output_units = 1.0 / (unyt.yr * unyt.Mpc ** 3)
 
 # Loop through simulations
 for sim in args.sims:
-    snapshot_filename = f'{base_dir}/{sim}/snapshots/colibre_0127/colibre_0127.hdf5'
+    snapshot_filename = f'{base_dir}/{sim}/snapshots/colibre_0000/colibre_0000.hdf5'
     SNIa_filename = f'{base_dir}/{sim}/SNIa.txt'
 
     # Load data from SNIa file
@@ -55,9 +55,9 @@ for sim in args.sims:
     # Plot simulation data, use high z-order so it's on top of observations
     scale_factor = data["a"]
     SNIa_rate = (data["SNIa rate"] * SNIa_rate_units).to(SNIa_rate_output_units)
-    # TODO:
-    label = sim
-    ax.plot(scale_factor, SNIa_rate.value * multiplicative_factor, label=sim, zorder=10000)
+
+    label, color, ls = helpers.get_sim_plot_style(sim)
+    ax.plot(scale_factor, SNIa_rate.value * multiplicative_factor, label=label, color=color, ls=ls, zorder=10000)
 ax.legend()
 
 # Plot observational data
@@ -79,7 +79,7 @@ for obs_data in observational_data:
             marker="o",
             elinewidth=0.5,
             markeredgecolor="none",
-            markersize=2,
+            markersize=4,
             zorder=-10,
         )
     )

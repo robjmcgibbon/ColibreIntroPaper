@@ -3,6 +3,7 @@ Plots the distribution of various stellar birth properties.
 """
 
 import argparse
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,11 +11,11 @@ import unyt
 import swiftsimio as sw
 plt.style.use('../mnras.mplstyle')
 
+import helpers
+
 # Arguments passed when running the script
 parser = argparse.ArgumentParser()
-# TODO
-#base_dir = f'/cosma8/data/dp004/colibre/Runs'
-base_dir = f'/net/hypernova/data2/COLIBRE'
+base_dir = f'/cosma8/data/dp004/colibre/Runs'
 parser.add_argument('--sims', nargs='+', type=str, required=True, help="Simulation names")
 args = parser.parse_args()
 
@@ -107,7 +108,10 @@ for name, (load_prop, bins, xlabel, ylabel) in prop_info.items():
     ax.loglog()
 
     for sim in args.sims:
+        print(sim)
         snapshot_filename = f'{base_dir}/{sim}/snapshots/colibre_0127/colibre_0127.hdf5'
+        if not os.path.exists(snapshot_filename):
+            snapshot_filename = f'{base_dir}/{sim}/snapshots/colibre_0123/colibre_0123.hdf5'
         snap = sw.load(snapshot_filename)
         prop = load_prop(snap)
         n_star = prop.shape[0]
@@ -115,12 +119,13 @@ for name, (load_prop, bins, xlabel, ylabel) in prop_info.items():
         H, _ = np.histogram(prop, bins=bins.value)
         y_points = H / log_bin_width / n_star
 
-        label = sim
-        ax.plot(centres, y_points, label=label)
+        label, color, ls = helpers.get_sim_plot_style(sim)
+        ax.plot(centres, y_points, label=label, color=color, ls=ls)
 
     ax.legend(loc="upper right", markerfirst=False)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    ax.set_ylim(bottom=1e-3)
 
     fig.savefig(f"{name}_distribution.pdf")
     plt.close()

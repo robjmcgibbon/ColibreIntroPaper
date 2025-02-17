@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import unyt
 import swiftsimio as sw
-plt.style.use('../mnras.mplstyle')
+plt.style.use('./mnras.mplstyle')
 
 import helpers
 

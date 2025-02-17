@@ -15,7 +15,7 @@ import numpy as np
 import swiftsimio as sw
 import unyt
 from velociraptor.observations import load_observations
-plt.style.use('../mnras.mplstyle')
+plt.style.use('./mnras.mplstyle')
 
 import helpers
 
@@ -61,7 +61,7 @@ for sim in args.sims:
 ax.legend()
 
 # Plot observational data
-path_to_obs_data = f"../velociraptor-comparison-data"
+path_to_obs_data = f"./velociraptor-comparison-data"
 observational_data = load_observations(
     sorted(glob.glob(f"{path_to_obs_data}/data/CosmicSNIaRate/*.hdf5"))
 )
@@ -132,11 +132,11 @@ ax2.set_xticklabels(["$%2.1f$" % t_tick for t_tick in t_ticks])
 ax.tick_params(axis="x", which="minor", bottom=False)
 ax2.tick_params(axis="x", which="minor", top=False)
 
-plt.subplots_adjust(left=0.12, right=0.97, top=0.88, bottom=0.12)
+plt.subplots_adjust(left=0.14, right=0.97, top=0.88, bottom=0.12)
 
 ax.set_ylim(0.0, 1.6)
-ax.set_xlim(1.02, 0.07)
-ax2.set_xlim(1.02, 0.07)
+ax.set_xlim(1.02, 0.09)
+ax2.set_xlim(1.02, 0.09)
 
 ax.set_xlabel("Redshift $z$")
 ax.set_ylabel(

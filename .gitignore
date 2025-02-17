@@ -1,5 +1,6 @@
 *.png
 *.pdf
 *.hdf5
+__pycache__
 
 pipeline-configs/

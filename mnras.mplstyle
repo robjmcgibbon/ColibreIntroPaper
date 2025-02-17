@@ -2,7 +2,7 @@
 lines.linewidth: 1.5
 
 # Font options
-font.size: 12
+font.size: 14
 font.family: STIXGeneral
 mathtext.fontset: stix
 
@@ -18,7 +18,7 @@ text.usetex: False
 
 # Legend options
 legend.frameon: False
-legend.fontsize: 6
+legend.fontsize: 12
 
 # Figure options for publications
 figure.dpi: 300

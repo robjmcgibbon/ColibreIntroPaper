@@ -22,7 +22,7 @@ import swiftsimio as sw
 import unyt
 from matplotlib.colors import LogNorm, Normalize
 from matplotlib.animation import FuncAnimation
-plt.style.use('../mnras.mplstyle')
+plt.style.use('./mnras.mplstyle')
 
 parameters = {
     # Data generation

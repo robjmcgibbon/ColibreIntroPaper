@@ -202,6 +202,10 @@ if args.generate_data:
                 invalid = H_norm == 0.0
                 H[invalid] = -100
                 H_norm[invalid] = 1.0
+                # Set bins with zeros for weight_2 that do have particles as 1e-100
+                no_weight = H == 0.0
+                H[no_weight] = 1e-100
+                H_norm[no_weight] = 1.0
                 hist = (H / H_norm).T
 
             plot_data[plot_name] = {
@@ -288,6 +292,7 @@ for plot_name in plot_names:
     ax.loglog()
 
     def plot_2Dhistogram(dataset_name_x, dataset_name_y, norm=None):
+        # Generate histogram
         if norm is None:
             norm = LogNorm(vmin=1, vmax=np.max(data['hist']))
         mappable = ax.pcolormesh(
@@ -296,6 +301,16 @@ for plot_name in plot_names:
             np.ma.array(data['hist'], mask=data['hist']==-100), 
             norm=norm
         )
+        # Add minor ticks
+        major_xticks = ax.get_xticks()
+        minor_xticks = 10**np.arange(np.log10(major_xticks[0]), np.log10(major_xticks[-1]))
+        ax.set_xticks(minor_xticks, minor=True)
+        ax.set_xticklabels([], minor=True)
+        major_yticks = ax.get_yticks()
+        minor_yticks = 10**np.arange(np.log10(major_yticks[0]), np.log10(major_yticks[-1]))
+        ax.set_yticks(minor_yticks, minor=True)
+        ax.set_yticklabels([], minor=True)
+        # Set axis limits
         ax.set_xlim(*parameters[f'{dataset_name_x}_xlim'])
         ax.set_ylim(*parameters[f'{dataset_name_y}_ylim'])
         return mappable

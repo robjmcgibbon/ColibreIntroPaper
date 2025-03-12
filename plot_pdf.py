@@ -29,7 +29,7 @@ def load_stellar_birth_temperatures(snap):
     return snap.stars.birth_temperatures.to("K").value
 
 def load_stellar_birth_velocity_dispersions(snap):
-    return snap.stars.birth_velocity_dispersions.to("km**2/s**2").value
+    return np.sqrt(snap.stars.birth_velocity_dispersions.to("km**2/s**2").value)
 
 def load_stellar_birth_densities(snap):
     return (snap.stars.birth_densities.to("g/cm**3") / unyt.mh.to("g")).value
@@ -67,32 +67,32 @@ prop_info =  {
     'birth_densities': (
         load_stellar_birth_densities,
         unyt.unyt_array(np.logspace(-2, 7, number_of_bins), units="1/cm**3"),
-        "Stellar birth density $\\rho_b$ [$n_{\\rm H}$ cm$^{-3}$]",
-        "$n_{\\rm bin}$ / d$\\log\\rho_b$ / $n_{\\rm total}$",
+        "Birth density $n_{\\rm H}$ [cm$^{-3}$]",
+        "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
     ),
     'birth_temperatures': (
         load_stellar_birth_temperatures,
         unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
-        "Stellar birth temperature $t_b$ [k]",
-        "$n_{\\rm bin}$ / d$\\log(t_b)$ / $n_{\\rm total}$",
+        "Birth temperature $T_b$ [k]",
+        "$n_{\\rm bin}$ / d$\\log_{10}T_b$ / $n_{\\rm total}$",
     ),
     'birth_velocity_dispersions': (
         load_stellar_birth_velocity_dispersions,
-        unyt.unyt_array(np.logspace(0.25, 5.25, number_of_bins), units="km**2/s**2"),
-        "Stellar birth velocity dispersion $\\sigma{}_b^2$ [km$^2$ s$^{-2}$]",
-        "$n_{\\rm bin}$ / d$\\log(\\sigma{}_b^2)$ / $n_{\\rm total}$",
+        unyt.unyt_array(np.logspace(0, 2.5, number_of_bins), units="km/s"),
+        "Birth velocity dispersion $\\sigma{}_b$ [km s$^{-1}$]",
+        "$n_{\\rm bin}$ / d$\\log_{10}\\sigma{}_b$ / $n_{\\rm total}$",
     ),
     'densities_at_last_supernova_event': (
         load_snii_gas_densities,
         unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
         "Density of the gas heated by CCSN $\\rho_{\\rm CCSN}$ [$n_{\\rm H}$ cm$^{-3}$]",
-        "$n_{\\rm bin}$ / d$\\log\\rho_{\\rm CCSN}$ / $n_{\\rm total}$",
+        "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm CCSN}$ / $n_{\\rm total}$",
     ),
     'densities_at_last_agn_event': (
         load_agn_gas_densities,
         unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
         "Density of the gas heated by AGN $\\rho_{\\rm AGN}$ [$n_{\\rm H}$ cm$^{-3}$]",
-        "$n_{\\rm bin}$ / d$\\log\\rho_{\\rm AGN}$ / $n_{\\rm total}$",
+        "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm AGN}$ / $n_{\\rm total}$",
     ),
 }
 
@@ -106,6 +106,9 @@ for name, (load_prop, bins, xlabel, ylabel) in prop_info.items():
     fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
     plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.12)
     ax.loglog()
+    from matplotlib.ticker import LogLocator
+    ax.xaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100))
+    ax.yaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100))
 
     for sim in args.sims:
         print(sim)

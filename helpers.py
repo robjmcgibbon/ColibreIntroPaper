@@ -12,7 +12,7 @@ def get_sim_plot_style(sim):
         ls = '-'
         label += 'm7'
     else:
-        raise NotImplementedError('Sim must contain m5/m6/m7')
+        raise NotImplementedError('Sim must contain m5/m6/m7 (e.g. L50_m5/THERMAL')
 
     if 'THERMAL' in sim:
         color = 'darkorange'

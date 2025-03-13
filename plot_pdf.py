@@ -63,19 +63,32 @@ def load_agn_gas_densities(snap):
     return gas_AGN_densities[gas_AGN_heated]
 
 
-# define load_dataset, bins, xlabel, ylabelk
 prop_info =  {
+    # Name of plot
     'birth_densities': (
+        # Properties to plot
         [
             (
+                # Load function for property
                 load_stellar_birth_densities,
+                # Bins when creating histogram
                 unyt.unyt_array(np.logspace(-2, 7, number_of_bins), units="1/cm**3"),
+                # Linestyle for this property
                 "-",
-                "",
+                # Name of property (if plotting multiple properties
+                None,
             ),
         ],
+        # Create a cumulative plot?
+        False,
+        # x_axis_label
         "Birth density $n_{\\rm H}$ [cm$^{-3}$]",
+        # y_axis_label
         "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
+        # (x_axis_limits, x_axis_scale
+        (None, "log"),
+        # (y_axis_limits, x_axis_scale
+        ([1e-3, 1e1], "log"),
     ),
     'birth_temperatures': (
         [
@@ -83,11 +96,44 @@ prop_info =  {
                 load_stellar_birth_temperatures,
                 unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
                 "-",
-                "",
+                None,
             ),
         ],
+        False,
         "Birth temperature $T_b$ [k]",
         "$n_{\\rm bin}$ / d$\\log_{10}T_b$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([1e-3, 1e1], "log"),
+    ),
+    'birth_temperatures_cumulative_log': (
+        [
+            (
+                load_stellar_birth_temperatures,
+                unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
+                "-",
+                None,
+            ),
+        ],
+        True,
+        "Birth temperature $T_b$ [k]",
+        "$n(>T_b)$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([1e-3, 1.1], "log"),
+    ),
+    'birth_temperatures_cumulative_lin': (
+        [
+            (
+                load_stellar_birth_temperatures,
+                unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
+                "-",
+                None,
+            ),
+        ],
+        True,
+        "Birth temperature $T_b$ [k]",
+        "$n(>T_b)$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([0, 1.1], "linear"),
     ),
     'birth_velocity_dispersions': (
         [
@@ -95,11 +141,14 @@ prop_info =  {
                 load_stellar_birth_velocity_dispersions,
                 unyt.unyt_array(np.logspace(0, 2.5, number_of_bins), units="km/s"),
                 "-",
-                "",
+                None,
             ),
         ],
+        False,
         "Birth velocity dispersion $\\sigma{}_b$ [km s$^{-1}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}\\sigma{}_b$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([1e-3, 1e1], "log"),
     ),
     'densities_at_last_supernova_event': (
         [
@@ -107,11 +156,14 @@ prop_info =  {
                 load_snii_gas_densities,
                 unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
                 "-",
-                "",
+                None,
             ),
         ],
+        False,
         "Density of the gas heated by CCSN $\\rho_{\\rm CCSN}$ [$n_{\\rm H}$ cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm CCSN}$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([1e-3, 1e1], "log"),
     ),
     'densities_at_last_agn_event': (
         [
@@ -119,11 +171,14 @@ prop_info =  {
                 load_agn_gas_densities,
                 unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
                 "-",
-                "",
+                None,
             ),
         ],
+        False,
         "Density of the gas heated by AGN $\\rho_{\\rm AGN}$ [$n_{\\rm H}$ cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm AGN}$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([1e-3, 1e1], "log"),
     ),
     'birth_ccsn_densities': (
         [
@@ -140,8 +195,11 @@ prop_info =  {
                 "CCSN feedback",
             ),
         ],
+        False,
         "Density $n_{\\rm H}$ [cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([1e-3, 1e1], "log"),
     ),
     'birth_ccsn_agn_densities': (
         [
@@ -164,21 +222,20 @@ prop_info =  {
                 "AGN feedback",
             ),
         ],
+        False,
         "Density $n_{\\rm H}$ [cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([1e-3, 1e1], "log"),
     ),
-
 }
 
 snap_data = {}
-for name, (to_plot, xlabel, ylabel) in prop_info.items():
+for name, (to_plot, cumulative, xlabel, ylabel, xaxis, yaxis) in prop_info.items():
     print(f'Loading and plotting {name}')
 
     fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
     plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.12)
-    ax.loglog()
-    ax.xaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100))
-    ax.yaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100))
 
     for i_prop, (load_prop, bins, ls, ls_label) in enumerate(to_plot):
         log_bin_width = np.log10(bins[1].value) - np.log10(bins[0].value)
@@ -198,7 +255,10 @@ for name, (to_plot, xlabel, ylabel) in prop_info.items():
             n_part = prop.shape[0]
 
             H, _ = np.histogram(prop, bins=bins.value)
-            y_points = H / log_bin_width / n_part
+            if cumulative:
+                y_points = np.cumsum(H) / n_part
+            else:
+                y_points = H / log_bin_width / n_part
 
             label, color, _ = helpers.get_sim_plot_style(sim)
             if i_prop == 0:
@@ -206,13 +266,25 @@ for name, (to_plot, xlabel, ylabel) in prop_info.items():
             else:
                 ax.plot(centres, y_points, color=color, ls=ls)
 
-        if ls_label != "":
+        if ls_label is not None:
             ax.plot(centres[0], y_points[0], color='k', ls=ls, label=ls_label)
 
-    ax.legend(loc="upper right", markerfirst=False)
+    if cumulative:
+        ax.legend(loc="lower right", markerfirst=False)
+    else:
+        ax.legend(loc="upper right", markerfirst=False)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_ylim(bottom=1e-3, top=1e1)
+    if xaxis[0] is not None:
+        ax.set_xlim(left=xaxis[0][0], right=xaxis[0][1])
+    if yaxis[0] is not None:
+        ax.set_ylim(bottom=yaxis[0][0], top=yaxis[0][1])
+    if xaxis[1] == "log":
+        ax.set_xscale('log')
+        ax.xaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100))
+    if yaxis[1] == "log":
+        ax.set_yscale('log')
+        ax.yaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100))
 
     fig.savefig(f"{name}_distribution.pdf")
     plt.close()

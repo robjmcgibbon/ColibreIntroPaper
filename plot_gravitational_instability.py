@@ -14,12 +14,11 @@ def h_smooth(mB, nH, hmin):
     h_pc = np.maximum(h_pc, hmin)
     return h_pc
 
-# TODO: Set these?
 kernel_support_over_smoothing_length = 1.936492
 softening_length_over_eps = 1.5
 gamma_kernel = kernel_support_over_smoothing_length
 
-lognH_min    = -4.
+lognH_min    = -9.
 lognH_max    = 8.
 dlognH       = 0.01
 
@@ -50,14 +49,17 @@ def add_lambdaJs_equal_lsmooth(ax, mB, lsoft, ls = 'dashed', lc = 'r', lw = 2., 
 
 fig, ax = plt.subplots(1)
 # Low res
-add_lambdaJs_equal_lsmooth(ax, 1.5e7, 1400, ls='-')
-ax.plot(2, 4, 'r-', label='m7')
+add_lambdaJs_equal_lsmooth(ax, 1.5e7, 0, ls='-', lc='C6')
+add_lambdaJs_equal_lsmooth(ax, 1.5e7, 1400, ls='-', lc='C3')
+ax.plot(2, 4, 'C3-', label='m7')
 # Mid res
-add_lambdaJs_equal_lsmooth(ax, 1.8e6, 700, ls='--')
-ax.plot(2, 4, 'r--', label='m6')
+add_lambdaJs_equal_lsmooth(ax, 1.8e6, 0, ls='--', lc='C6')
+add_lambdaJs_equal_lsmooth(ax, 1.8e6, 700, ls='--', lc='C3')
+ax.plot(2, 4, 'C3--', label='m6')
 # High res
-add_lambdaJs_equal_lsmooth(ax, 2.3e5, 350, ls=':')
-ax.plot(2, 4, 'r:', label='m5')
+add_lambdaJs_equal_lsmooth(ax, 2.3e5, 0, ls=':', lc='C6')
+add_lambdaJs_equal_lsmooth(ax, 2.3e5, 350, ls=':', lc='C3')
+ax.plot(2, 4, 'C3:', label='m5')
 # Original (from paper)
 # add_lambdaJs_equal_lsmooth(ax, 1e5, 100)
 
@@ -67,9 +69,12 @@ import unyt
 from matplotlib.colors import LogNorm
 
 colibre_dir = '/cosma8/data/dp004/colibre/Runs'
-# run, snap_nr = 'L025_m7/THERMAL_AGN_m7', 127
+run, snap_nr = 'L025_m7/THERMAL_AGN_m7', 127
 # run, snap_nr = 'L025_m6/THERMAL_AGN_m6', 123
-run, snap_nr = 'L025_m5/THERMAL_AGN_m5', 127
+# run, snap_nr = 'L100_m6/THERMAL_AGN_m6', 127
+# run, snap_nr = 'L100_m6/THERMAL_AGN_m6', 76
+# run, snap_nr = 'L100_m6/THERMAL_AGN_m6', 40
+# run, snap_nr = 'L025_m5/THERMAL_AGN_m5', 127
 snap = sw.load(f'{colibre_dir}/{run}/snapshots/colibre_{snap_nr:04}/colibre_{snap_nr:04}.hdf5')
 
 nh = np.log10((snap.gas.densities.to_physical() / unyt.mh).to(unyt.cm ** -3).value)
@@ -104,9 +109,9 @@ mappable = ax.pcolormesh(
 )
 
 ax.legend(loc='upper right')
-ax.set_title(run)
+ax.set_title(f'{run}, z={snap.metadata.redshift:.2f}')
 plt.tight_layout()
-outputname = run.replace('/', '_') + '_grav_instability.png'
+outputname = run.replace('/', '_') + f'_s{snap_nr}_grav_instability.png'
 fig.savefig(outputname, dpi = 250)
 plt.close()
 

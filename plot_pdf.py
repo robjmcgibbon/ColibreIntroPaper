@@ -105,6 +105,21 @@ prop_info =  {
         (None, "log"),
         ([1e-3, 1e1], "log"),
     ),
+    'birth_temperatures_lin': (
+        [
+            (
+                load_stellar_birth_temperatures,
+                unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
+                "-",
+                None,
+            ),
+        ],
+        False,
+        "Birth temperature $T_b$ [k]",
+        "$n_{\\rm bin}$ / d$\\log_{10}T_b$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([1e-3, 5], "linear"),
+    ),
     'birth_temperatures_cumulative_log': (
         [
             (
@@ -180,45 +195,18 @@ prop_info =  {
         (None, "log"),
         ([1e-3, 1e1], "log"),
     ),
-    'birth_ccsn_densities': (
+    'ccsn_agn_densities': (
         [
-            (
-                load_stellar_birth_densities,
-                unyt.unyt_array(np.logspace(-2, 7, number_of_bins), units="1/cm**3"),
-                "-",
-                "Stellar birth",
-            ),
             (
                 load_snii_gas_densities,
                 unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
-                "--",
-                "CCSN feedback",
-            ),
-        ],
-        False,
-        "Density $n_{\\rm H}$ [cm$^{-3}$]",
-        "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
-        (None, "log"),
-        ([1e-3, 1e1], "log"),
-    ),
-    'birth_ccsn_agn_densities': (
-        [
-            (
-                load_stellar_birth_densities,
-                unyt.unyt_array(np.logspace(-2, 7, number_of_bins), units="1/cm**3"),
                 "-",
-                "Stellar birth",
-            ),
-            (
-                load_snii_gas_densities,
-                unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
-                "--",
                 "CCSN feedback",
             ),
             (
                 load_agn_gas_densities,
                 unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
-                ":",
+                "--",
                 "AGN feedback",
             ),
         ],

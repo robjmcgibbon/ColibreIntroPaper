@@ -1,6 +1,7 @@
 def get_sim_plot_style(sim):
     # Extract box size
-    label = sim[:5]
+    assert sim[5] != '/', 'Run directory must be in LXXX_mY format'
+    label = sim[:4]
 
     if 'm5' in sim:
         color = '#9E0000'
@@ -16,10 +17,9 @@ def get_sim_plot_style(sim):
 
     if 'THERMAL' in sim:
         ls = '-'
-        label += ' THERMAL'
     elif 'HYBRID' in sim:
         ls = '--'
-        label += ' HYBRID'
+        label += ' h'
     else:
         raise NotImplementedError('Sim must contain THERMAL/HYBRID')
 

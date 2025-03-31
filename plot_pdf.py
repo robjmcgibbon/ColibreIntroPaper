@@ -86,9 +86,11 @@ prop_info =  {
         # y_axis_label
         "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
         # (x_axis_limits, x_axis_scale
-        (None, "log"),
+        ([1e-4, 1e7], "log"),
         # (y_axis_limits, x_axis_scale
         ([1e-3, 1e1], "log"),
+        # Plot median line?
+        False,
     ),
     'birth_temperatures': (
         [
@@ -100,10 +102,11 @@ prop_info =  {
             ),
         ],
         False,
-        "Birth temperature $T_b$ [k]",
-        "$n_{\\rm bin}$ / d$\\log_{10}T_b$ / $n_{\\rm total}$",
+        "Birth temperature $T$ [k]",
+        "$n_{\\rm bin}$ / d$\\log_{10}T$ / $n_{\\rm total}$",
         (None, "log"),
         ([1e-3, 1e1], "log"),
+        False,
     ),
     'birth_temperatures_lin': (
         [
@@ -119,6 +122,7 @@ prop_info =  {
         "$n_{\\rm bin}$ / d$\\log_{10}T_b$ / $n_{\\rm total}$",
         (None, "log"),
         ([1e-3, 5], "linear"),
+        False,
     ),
     'birth_temperatures_cumulative_log': (
         [
@@ -134,6 +138,7 @@ prop_info =  {
         "$n(>T_b)$ / $n_{\\rm total}$",
         (None, "log"),
         ([1e-3, 1.1], "log"),
+        False,
     ),
     'birth_temperatures_cumulative_lin': (
         [
@@ -149,6 +154,7 @@ prop_info =  {
         "$n(>T_b)$ / $n_{\\rm total}$",
         (None, "log"),
         ([0, 1.1], "linear"),
+        False,
     ),
     'birth_velocity_dispersions': (
         [
@@ -160,10 +166,11 @@ prop_info =  {
             ),
         ],
         False,
-        "Birth velocity dispersion $\\sigma{}_b$ [km s$^{-1}$]",
-        "$n_{\\rm bin}$ / d$\\log_{10}\\sigma{}_b$ / $n_{\\rm total}$",
+        "Birth velocity dispersion $\\sigma$ [km s$^{-1}$]",
+        "$n_{\\rm bin}$ / d$\\log_{10}\\sigma$ / $n_{\\rm total}$",
         (None, "log"),
         ([1e-3, 1e1], "log"),
+        False,
     ),
     'densities_at_last_supernova_event': (
         [
@@ -179,6 +186,7 @@ prop_info =  {
         "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm CCSN}$ / $n_{\\rm total}$",
         (None, "log"),
         ([1e-3, 1e1], "log"),
+        False,
     ),
     'densities_at_last_agn_event': (
         [
@@ -192,8 +200,9 @@ prop_info =  {
         False,
         "Density of the gas heated by AGN $\\rho_{\\rm AGN}$ [$n_{\\rm H}$ cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm AGN}$ / $n_{\\rm total}$",
-        (None, "log"),
+        ([1e-4, 1e7], "log"),
         ([1e-3, 1e1], "log"),
+        False,
     ),
     'ccsn_agn_densities': (
         [
@@ -213,13 +222,14 @@ prop_info =  {
         False,
         "Density $n_{\\rm H}$ [cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
-        (None, "log"),
+        ([1e-4, 1e7], "log"),
         ([1e-3, 1e1], "log"),
+        False,
     ),
 }
 
 snap_data = {}
-for name, (to_plot, cumulative, xlabel, ylabel, xaxis, yaxis) in prop_info.items():
+for name, (to_plot, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median) in prop_info.items():
     print(f'Loading and plotting {name}')
 
     fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
@@ -253,6 +263,8 @@ for name, (to_plot, cumulative, xlabel, ylabel, xaxis, yaxis) in prop_info.items
                 ax.plot(centres, y_points, label=label, color=color, ls=ls)
             else:
                 ax.plot(centres, y_points, color=color, ls=ls)
+            if plot_median:
+                ax.axvline(np.median(prop), color=color, ls=ls)
 
         if ls_label is not None:
             ax.plot(centres[0], y_points[0], color='k', ls=ls, label=ls_label)

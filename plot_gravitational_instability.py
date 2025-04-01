@@ -55,25 +55,25 @@ fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
 # Low res
 add_lambdaJs_equal_lsmooth(ax, 1.5e7, 0, ls=':', lc='#87CEFA')
 # z = 0
-add_lambdaJs_equal_lsmooth(ax, 1.5e7, 1400, ls='-', lc='#87CEFA')
+# add_lambdaJs_equal_lsmooth(ax, 1.5e7, 1400, ls='-', lc='#87CEFA')
 # z = 4
-# add_lambdaJs_equal_lsmooth(ax, 1.5e7, 3600 / 5, ls='-', lc='#87CEFA')
+add_lambdaJs_equal_lsmooth(ax, 1.5e7, 3600 / 5, ls='-', lc='#87CEFA')
 ax.plot(10**2, 10**4, color='#87CEFA', label='m7')
 
 # Mid res
 add_lambdaJs_equal_lsmooth(ax, 1.8e6, 0, ls=':', lc='#FF7F50')
 # z = 0
-add_lambdaJs_equal_lsmooth(ax, 1.8e6, 700, ls='-', lc='#FF7F50')
+# add_lambdaJs_equal_lsmooth(ax, 1.8e6, 700, ls='-', lc='#FF7F50')
 # z = 4
-# add_lambdaJs_equal_lsmooth(ax, 1.8e6, 1800 / 5, ls='--', lc='#FF7F50')
+add_lambdaJs_equal_lsmooth(ax, 1.8e6, 1800 / 5, ls='-', lc='#FF7F50')
 ax.plot(10**2, 10**4, color='#FF7F50', ls='-', label='m6')
 
 # High res
 add_lambdaJs_equal_lsmooth(ax, 2.3e5, 0, ls=':', lc='#9E0000')
 # z = 0
-add_lambdaJs_equal_lsmooth(ax, 2.3e5, 350, ls='-', lc='#9E0000')
+# add_lambdaJs_equal_lsmooth(ax, 2.3e5, 350, ls='-', lc='#9E0000')
 # z = 4
-# add_lambdaJs_equal_lsmooth(ax, 2.3e5, 900 / 5, ls='-', lc='#9E0000')
+add_lambdaJs_equal_lsmooth(ax, 2.3e5, 900 / 5, ls='-', lc='#9E0000')
 ax.plot(10**2, 10**4, color='#9E0000', ls='-', label='m5')
 
 # Line styles
@@ -84,8 +84,8 @@ ax.plot(10**2, 10**4, 'k:', label='$M_J = <N_{ngb}> m_g$')
 
 colibre_dir = '/cosma8/data/dp004/colibre/Runs'
 # run, snap_nr = 'L025_m7/THERMAL_AGN_m7', 127
-run, snap_nr = 'L100_m6/THERMAL_AGN_m6', 127
-# run, snap_nr = 'L100_m6/THERMAL_AGN_m6', 56
+# run, snap_nr = 'L100_m6/THERMAL_AGN_m6', 127
+run, snap_nr = 'L100_m6/THERMAL_AGN_m6', 56
 snap = sw.load(f'{colibre_dir}/{run}/snapshots/colibre_{snap_nr:04}/colibre_{snap_nr:04}.hdf5')
 
 nh = np.log10((snap.gas.densities.to_physical() / unyt.mh).to(unyt.cm ** -3).value)
@@ -94,8 +94,8 @@ total_mass = np.sum(snap.gas.masses)
 mass_fraction = (snap.gas.masses / total_mass).value
 
 n_bin = 256
-density_bounds = np.array([10 ** (-9.5), 1e7])            # nh/cm^3
-temperature_bounds = np.array([10 ** (1), 10 ** (11)])    # K
+density_bounds = np.array([10 ** (-9.5), 1e8])            # nh/cm^3
+temperature_bounds = np.array([10 ** (1), 10 ** (12)])    # K
 x_bins = np.linspace(
     np.log10(density_bounds[0]), 
     np.log10(density_bounds[1]), 
@@ -114,7 +114,7 @@ H_norm, x_edges, y_edges = np.histogram2d(
 )
 hist = H_norm.T
 
-vmin = 10**-7
+vmin = 10**-9
 vmax = 3 * 10**-3
 norm = LogNorm(vmin=vmin, vmax=vmax)
 mappable = ax.pcolormesh(

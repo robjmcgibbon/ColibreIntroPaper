@@ -61,6 +61,13 @@ for ptype, ptype_name in [
                 desc = file[f'PartType{ptype}/{name}'].attrs['Description'].decode()
                 prop_info[snap_type][name] = desc
 
+    # Adding PartType0/HIIregionsEndTime
+    if ptype == 0:
+        for snap_type in ['thermal', 'snip']:
+            name = r'HIIregionsEndTime\textsuperscript{1}'
+            desc = 'Time until particle is in HII region'
+            prop_info[snap_type][name] = desc
+
     # Add properties to table (checking if present in snipshot)
     for name, desc in prop_info['thermal'].items():
         in_snip = r"\ding{51}" if name in prop_info['snip'] else r"\ding{53}"
@@ -101,3 +108,4 @@ table += r"""
 
 print(table)
 
+print(r'\textsuperscript{1} Missing from high redshift snapshots')

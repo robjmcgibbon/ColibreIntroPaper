@@ -111,7 +111,7 @@ prop_info =  {
                 None,
             ),
         ],
-        # Masks to apply
+        # Masks to apply (or pass None for no masks)
         [
             (
                 # Load function for mask, None to load all particles
@@ -326,6 +326,11 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
     plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.2)
     # plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.12)
 
+    # Store objects we want to appear in the legends
+    sim_legend_lines = []
+    mask_legend_lines = []
+    prop_legend_lines = []
+
     for i_prop, (load_prop, bins, prop_ls, prop_label) in enumerate(to_plot):
 
         log_bin_width = np.log10(bins[1].value) - np.log10(bins[0].value)
@@ -373,12 +378,14 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
                 # Add label to indicate sim name
                 label, color, _ = helpers.get_sim_plot_style(sim)
                 if (i_prop == 0) & (i_mask == 0):
-                    ax.plot(np.mean(centres), np.mean(y_points), label=label, color=color, ls=prop_ls)
+                    line, = ax.plot(np.mean(centres), np.mean(y_points), label=label, color=color, ls=prop_ls)
+                    sim_legend_lines.append(line)
 
                 if load_mask is not None:
                     ax.plot(centres, y_points, color=color, ls=mask_ls)
                     if (i_prop == 0) & (i_sim == 0):
-                        ax.plot(centres[0], y_points[0], color='k', ls=mask_ls, label=mask_label)
+                        line, = ax.plot(centres[0], y_points[0], color='k', ls=mask_ls, label=mask_label)
+                        mask_legend_lines.append(line)
                     if plot_median:
                         ax.axvline(np.median(prop), color=color, ls=mask_ls)
                     plot_prop_label = False
@@ -388,12 +395,15 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
                         ax.axvline(np.median(prop), color=color, ls=prop_ls)
 
         if plot_prop_label and (prop_label is not None):
-            ax.plot(centres[0], y_points[0], color='k', ls=prop_ls, label=prop_label)
+            line, = ax.plot(centres[0], y_points[0], color='k', ls=prop_ls, label=prop_label)
+            prop_legend_lines.append(line)
 
-    if cumulative:
-        ax.legend(loc="lower right", markerfirst=False)
-    else:
-        ax.legend(loc="upper right", markerfirst=False)
+    legend = ax.legend(handles=sim_legend_lines+prop_legend_lines, loc="upper right", markerfirst=False)
+    ax.add_artist(legend)
+    if len(mask_legend_lines) != 0:
+        legend = ax.legend(handles=mask_legend_lines, loc="upper left", markerfirst=False)
+        ax.add_artist(legend)
+
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if xaxis[0] is not None:

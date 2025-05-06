@@ -29,11 +29,20 @@ def load_stellar_birth_densities(snap):
 def load_stellar_birth_temperatures(snap):
     return snap.stars.birth_temperatures.to("K").value
 
+def load_stellar_birth_densities(snap):
+    return (snap.stars.birth_densities.to("g/cm**3") / unyt.mh.to("g")).value
+
 def load_stellar_birth_velocity_dispersions(snap):
     return np.sqrt(snap.stars.birth_velocity_dispersions.to("km**2/s**2").value)
 
-def load_stellar_birth_densities(snap):
-    return (snap.stars.birth_densities.to("g/cm**3") / unyt.mh.to("g")).value
+def load_stellar_thermal_velocity_dispersions(snap):
+    return (13.8 * np.sqrt(snap.stars.birth_temperatures / (10**4 * unyt.K))).value
+
+def load_stellar_velocity_dispersion_ratio(snap):
+    return load_stellar_birth_velocity_dispersions(snap) / load_stellar_thermal_velocity_dispersions(snap)
+
+def load_stellar_initial_masses(snap):
+    return snap.stars.initial_masses.to('Msun').value
 
 def load_snii_gas_densities(snap):
     gas_snii_densities = (snap.gas.densities_at_last_supernova_event.to(
@@ -62,6 +71,29 @@ def load_agn_gas_densities(snap):
 
     return gas_AGN_densities[gas_AGN_heated]
 
+def mask_galaxy_mass(low_mass, high_mass):
+    def load_masked_galaxy_masses(snap, soap):
+        # Create mapping from group_nr_bound to galaxy stellar mass
+        halo_catalogue_idx = soap.input_halos.halo_catalogue_index.value
+        stellar_mass = soap.bound_subhalo.stellar_mass.to('Msun').value
+        stellar_mass_from_halo_catalogue_idx = np.zeros(
+            np.max(halo_catalogue_idx) + 1, dtype=int
+        )
+        stellar_mass_from_halo_catalogue_idx[halo_catalogue_idx] = stellar_mass
+
+        # Use mapping to get host galaxy mass for each particle
+        particle_group_nr_bound = snap.stars.group_nr_bound.value
+        host_galaxy_stellar_mass = np.zeros(particle_group_nr_bound.shape[0])
+        is_bound = particle_group_nr_bound != -1
+        host_galaxy_stellar_mass[is_bound] = stellar_mass_from_halo_catalogue_idx[
+            particle_group_nr_bound[is_bound]
+        ]
+
+        # Create mask based on host_galaxy mass
+        mask = host_galaxy_stellar_mass >= low_mass
+        mask &= host_galaxy_stellar_mass < high_mass
+        return mask
+    return load_masked_galaxy_masses
 
 prop_info =  {
     # Name of plot
@@ -75,7 +107,18 @@ prop_info =  {
                 unyt.unyt_array(np.logspace(-2, 7, number_of_bins), units="1/cm**3"),
                 # Linestyle for this property
                 "-",
-                # Name of property (if plotting multiple properties
+                # Name of property (if plotting multiple properties)
+                None,
+            ),
+        ],
+        # Masks to apply
+        [
+            (
+                # Load function for mask, None to load all particles
+                None,
+                # Linestyle for this mask (overwrites property linestyle)
+                None,
+                # Name of mask
                 None,
             ),
         ],
@@ -101,8 +144,9 @@ prop_info =  {
                 None,
             ),
         ],
+        None,
         False,
-        "Birth temperature $T$ [k]",
+        "Birth temperature $T$ [K]",
         "$n_{\\rm bin}$ / d$\\log_{10}T$ / $n_{\\rm total}$",
         (None, "log"),
         ([1e-3, 1e1], "log"),
@@ -117,8 +161,9 @@ prop_info =  {
                 None,
             ),
         ],
+        None,
         False,
-        "Birth temperature $T_b$ [k]",
+        "Birth temperature $T_b$ [K]",
         "$n_{\\rm bin}$ / d$\\log_{10}T_b$ / $n_{\\rm total}$",
         (None, "log"),
         ([1e-3, 5], "linear"),
@@ -133,6 +178,7 @@ prop_info =  {
                 None,
             ),
         ],
+        None,
         True,
         "Birth temperature $T_b$ [k]",
         "$n(>T_b)$ / $n_{\\rm total}$",
@@ -149,8 +195,9 @@ prop_info =  {
                 None,
             ),
         ],
+        None,
         True,
-        "Birth temperature $T_b$ [k]",
+        "Birth temperature $T_b$ [K]",
         "$n(>T_b)$ / $n_{\\rm total}$",
         (None, "log"),
         ([0, 1.1], "linear"),
@@ -165,6 +212,7 @@ prop_info =  {
                 None,
             ),
         ],
+        None,
         False,
         "Birth velocity dispersion $\\sigma$ [km s$^{-1}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}\\sigma$ / $n_{\\rm total}$",
@@ -172,6 +220,44 @@ prop_info =  {
         ([1e-3, 1e1], "log"),
         False,
     ),
+   'ratio_birth_velocity_dispersions': (
+       [
+           (
+               load_stellar_velocity_dispersion_ratio,
+               unyt.unyt_array(np.logspace(-2, 3, number_of_bins), units="km/s"),
+               "-",
+               None,
+           ),
+       ],
+       [
+           (
+               mask_galaxy_mass(10**7, 10**8),
+               '-',
+               r'$10^{7}$ < $M_*$/$M_\odot$ < $10^{8}$',
+           ),
+           (
+               mask_galaxy_mass(10**8, 10**9),
+               '--',
+               r'$10^{8}$ < $M_*$/$M_\odot$ < $10^{9}$',
+           ),
+           (
+               mask_galaxy_mass(10**9, 10**10),
+               ':',
+               r'$10^{9}$ < $M_*$/$M_\odot$ < $10^{10}$',
+           ),
+           (
+               mask_galaxy_mass(10**10, 10**11),
+               '-.',
+               r'$10^{10}$ < $M_*$/$M_\odot$ < $10^{11}$',
+           ),
+       ],
+       False,
+       r"Velocity dispersion ratio $r = \sigma_{\rm b}$ / $13.8 \sqrt{\frac{T_{\rm b}}{10^4{\rm K}}}$",
+       "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
+       ([1e-1, 1e3], "log"),
+       ([1e-4, 1e2], "log"),
+       False,
+   ),
     'densities_at_last_supernova_event': (
         [
             (
@@ -181,6 +267,7 @@ prop_info =  {
                 None,
             ),
         ],
+        None,
         False,
         "Density of the gas heated by CCSN $\\rho_{\\rm CCSN}$ [$n_{\\rm H}$ cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm CCSN}$ / $n_{\\rm total}$",
@@ -197,6 +284,7 @@ prop_info =  {
                 None,
             ),
         ],
+        None,
         False,
         "Density of the gas heated by AGN $\\rho_{\\rm AGN}$ [$n_{\\rm H}$ cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm AGN}$ / $n_{\\rm total}$",
@@ -219,6 +307,7 @@ prop_info =  {
                 "AGN feedback",
             ),
         ],
+        None,
         False,
         "Density $n_{\\rm H}$ [cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
@@ -229,45 +318,77 @@ prop_info =  {
 }
 
 snap_data = {}
-for name, (to_plot, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median) in prop_info.items():
+soap_data = {}
+for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median) in prop_info.items():
     print(f'Loading and plotting {name}')
 
     fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
-    plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.12)
+    plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.2)
+    # plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.12)
 
-    for i_prop, (load_prop, bins, ls, ls_label) in enumerate(to_plot):
+    for i_prop, (load_prop, bins, prop_ls, prop_label) in enumerate(to_plot):
+
         log_bin_width = np.log10(bins[1].value) - np.log10(bins[0].value)
         centres = 0.5 * (bins[1:] + bins[:-1])
 
-        for sim in args.sims:
-            print(sim)
+        if masks is None:
+            masks = [(None, None, None)]
+
+        for i_sim, sim in enumerate(args.sims):
             if sim not in snap_data:
                 # Load z=0 data
-                snapshot_filename = f'{base_dir}/{sim}/snapshots/colibre_0127/colibre_0127.hdf5'
+                snapshot_filename = f'{base_dir}/{sim}/SOAP/colibre_with_SOAP_membership_0127.hdf5'
                 if not os.path.exists(snapshot_filename):
-                    snapshot_filename = f'{base_dir}/{sim}/snapshots/colibre_0123/colibre_0123.hdf5'
+                    snapshot_filename = f'{base_dir}/{sim}/SOAP/colibre_with_SOAP_membership_0123.hdf5'
                 snap_data[sim] = sw.load(snapshot_filename)
             snap = snap_data[sim]
 
-            prop = load_prop(snap)
-            n_part = prop.shape[0]
+            if masks[0] is not None:
+                if sim not in soap_data:
+                    # Load z=0 data
+                    soap_filename = f'{base_dir}/{sim}/SOAP/halo_properties_0127.hdf5'
+                    if not os.path.exists(soap_filename):
+                        soap_filename = f'{base_dir}/{sim}/SOAP/halo_properties_0123.hdf5'
+                    snapshot_filename = f'{base_dir}/{sim}/SOAP/colibre_with_SOAP_membership_0123.hdf5'
+                    soap_data[sim] = sw.load(soap_filename)
+                soap = soap_data[sim]
 
-            H, _ = np.histogram(prop, bins=bins.value)
-            if cumulative:
-                y_points = np.cumsum(H) / n_part
-            else:
-                y_points = H / log_bin_width / n_part
+            plot_prop_label = True
+            for i_mask, (load_mask, mask_ls, mask_label) in enumerate(masks):
+                prop = load_prop(snap)
+                n_part = prop.shape[0]
 
-            label, color, _ = helpers.get_sim_plot_style(sim)
-            if i_prop == 0:
-                ax.plot(centres, y_points, label=label, color=color, ls=ls)
-            else:
-                ax.plot(centres, y_points, color=color, ls=ls)
-            if plot_median:
-                ax.axvline(np.median(prop), color=color, ls=ls)
+                # Mask values if required
+                if load_mask is not None:
+                    mask = load_mask(snap, soap)
+                    prop = prop[mask]
 
-        if ls_label is not None:
-            ax.plot(centres[0], y_points[0], color='k', ls=ls, label=ls_label)
+                # Create histogram
+                H, _ = np.histogram(prop, bins=bins.value)
+                if cumulative:
+                    y_points = np.cumsum(H) / n_part
+                else:
+                    y_points = H / log_bin_width / n_part
+
+                # Add label to indicate sim name
+                label, color, _ = helpers.get_sim_plot_style(sim)
+                if (i_prop == 0) & (i_mask == 0):
+                    ax.plot(np.mean(centres), np.mean(y_points), label=label, color=color, ls=prop_ls)
+
+                if load_mask is not None:
+                    ax.plot(centres, y_points, color=color, ls=mask_ls)
+                    if (i_prop == 0) & (i_sim == 0):
+                        ax.plot(centres[0], y_points[0], color='k', ls=mask_ls, label=mask_label)
+                    if plot_median:
+                        ax.axvline(np.median(prop), color=color, ls=mask_ls)
+                    plot_prop_label = False
+                else:
+                    ax.plot(centres, y_points, color=color, ls=prop_ls)
+                    if plot_median:
+                        ax.axvline(np.median(prop), color=color, ls=prop_ls)
+
+        if plot_prop_label and (prop_label is not None):
+            ax.plot(centres[0], y_points[0], color='k', ls=prop_ls, label=prop_label)
 
     if cumulative:
         ax.legend(loc="lower right", markerfirst=False)

@@ -220,6 +220,7 @@ prop_info =  {
         ([1e-3, 1e1], "log"),
         False,
     ),
+    # Note this requires the plot size changed
    'ratio_birth_velocity_dispersions': (
        [
            (
@@ -236,26 +237,21 @@ prop_info =  {
                r'$10^{7}$ < $M_*$/$M_\odot$ < $10^{8}$',
            ),
            (
-               mask_galaxy_mass(10**8, 10**9),
+               mask_galaxy_mass(10**8.75, 10**9.75),
                '--',
-               r'$10^{8}$ < $M_*$/$M_\odot$ < $10^{9}$',
+               r'$10^{8.75}$ < $M_*$/$M_\odot$ < $10^{9.75}$',
            ),
            (
-               mask_galaxy_mass(10**9, 10**10),
+               mask_galaxy_mass(10**10.5, 10**11.5),
                ':',
-               r'$10^{9}$ < $M_*$/$M_\odot$ < $10^{10}$',
-           ),
-           (
-               mask_galaxy_mass(10**10, 10**11),
-               '-.',
-               r'$10^{10}$ < $M_*$/$M_\odot$ < $10^{11}$',
+               r'$10^{10.5}$ < $M_*$/$M_\odot$ < $10^{11.5}$',
            ),
        ],
        False,
        r"Velocity dispersion ratio $r = \sigma_{\rm b}$ / $13.8 \sqrt{\frac{T_{\rm b}}{10^4{\rm K}}}$",
        "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
        ([1e-1, 1e3], "log"),
-       ([1e-4, 1e2], "log"),
+       ([1e-3, 1e1], "log"),
        False,
    ),
     'densities_at_last_supernova_event': (
@@ -323,8 +319,11 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
     print(f'Loading and plotting {name}')
 
     fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
-    plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.2)
-    # plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.12)
+    plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.12)
+    # For velocity_dispersion_ratio
+    # h = (0.97 - 0.12) * 4 / (0.97 - 0.19)
+    # fig, ax = plt.subplots(1, figsize=(5, h), constrained_layout=False)
+    # plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.19)
 
     # Store objects we want to appear in the legends
     sim_legend_lines = []

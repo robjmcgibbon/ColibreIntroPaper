@@ -220,8 +220,26 @@ prop_info =  {
         ([1e-3, 1e1], "log"),
         False,
     ),
-    # Note this requires the plot size changed
    'ratio_birth_velocity_dispersions': (
+   # Note this requires the plot size changed
+       [
+           (
+               load_stellar_velocity_dispersion_ratio,
+               unyt.unyt_array(np.logspace(-2, 3, number_of_bins), units="km/s"),
+               "-",
+               None,
+           ),
+       ],
+       None,
+       False,
+       r"Velocity dispersion ratio $r = \sigma_{\rm b}$ / $\left(\sqrt{\frac{T_{\rm b}}{10^4{\rm K}}} 13.8 \rm{km \;s^{-1}} \right)$",
+       "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
+       ([1e-1, 1e3], "log"),
+       ([1e-3, 1e1], "log"),
+       False,
+   ),
+   'ratio_birth_velocity_dispersions_mass_split': (
+   # Note this requires the plot size changed
        [
            (
                load_stellar_velocity_dispersion_ratio,
@@ -234,21 +252,21 @@ prop_info =  {
            (
                mask_galaxy_mass(10**7, 10**8),
                '-',
-               r'$10^{7}$ < $M_*$/$M_\odot$ < $10^{8}$',
+               r'$10^{7}$ < $M_*$/$\rm{M_\odot}$ < $10^{8}$',
            ),
            (
                mask_galaxy_mass(10**8.75, 10**9.75),
                '--',
-               r'$10^{8.75}$ < $M_*$/$M_\odot$ < $10^{9.75}$',
+               r'$10^{8.75}$ < $M_*$/$\rm{M_\odot}$ < $10^{9.75}$',
            ),
            (
                mask_galaxy_mass(10**10.5, 10**11.5),
                ':',
-               r'$10^{10.5}$ < $M_*$/$M_\odot$ < $10^{11.5}$',
+               r'$10^{10.5}$ < $M_*$/$\rm{M_\odot}$ < $10^{11.5}$',
            ),
        ],
        False,
-       r"Velocity dispersion ratio $r = \sigma_{\rm b}$ / $13.8 \sqrt{\frac{T_{\rm b}}{10^4{\rm K}}}$",
+       r"Velocity dispersion ratio $r = \sigma_{\rm b}$ / $\left(\sqrt{\frac{T_{\rm b}}{10^4{\rm K}}} 13.8 \rm{km \;s^{-1}} \right)$",
        "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
        ([1e-1, 1e3], "log"),
        ([1e-3, 1e1], "log"),

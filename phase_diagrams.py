@@ -36,7 +36,7 @@ parameters = {
     'density_xlim': np.array([10 ** (-9.5), 1e7]),              # nh/cm^3
     'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),     # K
     'pressure_ylim': np.array([10 ** (-8.0), 10 ** 12.0]),      # K/cm^1
-    'metallicity_cbar_lim': np.array([-4, 1]),                  # dimensionless (log)
+    'metallicity_cbar_lim': np.array([-3, 0.5]),                # dimensionless (log)
     'dust_to_metal_cbar_lim': np.array([1e-2, 7e-1]),           # dimensionless
     'HI_frac_cbar_lim': np.array([1e-3, 1]),                    # dimensionless
 }
@@ -332,7 +332,7 @@ for plot_name in plot_names:
             vmax=parameters['metallicity_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = r"$\left<\left[\frac{Z}{Z_{\odot}}\right]\right>$"
+        cbar_label = r"$\left<\left[Z/Z_{\odot}\right]\right>$"
         cbar_label += f'(min $10^{{{parameters["min_metallicity"]}}}$)'
     elif plot_name == 'density_temperature_dust_to_metal':
         norm = LogNorm(

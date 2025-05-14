@@ -415,10 +415,10 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
             line, = ax.plot(centres[0], y_points[0], color='k', ls=prop_ls, label=prop_label)
             prop_legend_lines.append(line)
 
-    legend = ax.legend(handles=sim_legend_lines+prop_legend_lines, loc="upper right", markerfirst=False)
+    legend = ax.legend(handles=sim_legend_lines, loc="upper right", markerfirst=False)
     ax.add_artist(legend)
-    if len(mask_legend_lines) != 0:
-        legend = ax.legend(handles=mask_legend_lines, loc="upper left", markerfirst=False)
+    if len(mask_legend_lines + prop_legend_lines) != 0:
+        legend = ax.legend(handles=mask_legend_lines+prop_legend_lines, loc="upper left", markerfirst=False)
         ax.add_artist(legend)
 
     ax.set_xlabel(xlabel)

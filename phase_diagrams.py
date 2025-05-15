@@ -38,7 +38,9 @@ parameters = {
     'pressure_ylim': np.array([10 ** (-8.0), 10 ** 12.0]),      # K/cm^1
     'metallicity_cbar_lim': np.array([-3, 0.5]),                # dimensionless (log)
     'dust_to_metal_cbar_lim': np.array([1e-2, 7e-1]),           # dimensionless
+    'small_to_large_cbar_lim': np.array([1e-2, 1e0]),          # dimensionless
     'HI_frac_cbar_lim': np.array([1e-3, 1]),                    # dimensionless
+    'H2_frac_cbar_lim': np.array([1e-3, 1]),                    # dimensionless
 }
 
 # Arguments passed when running the script
@@ -77,7 +79,17 @@ plot_names = {
         'density_bounds',
         'temperature_bounds',
     ],
+    'density_temperature_small_to_large': [
+        'n_bin',
+        'density_bounds',
+        'temperature_bounds',
+    ],
     'density_temperature_HI_frac': [
+        'n_bin',
+        'density_bounds',
+        'temperature_bounds',
+    ],
+    'density_temperature_H2_frac': [
         'n_bin',
         'density_bounds',
         'temperature_bounds',
@@ -107,15 +119,24 @@ def load_dataset(dataset_name):
     elif dataset_name == 'mass':
         datasets[dataset_name] = snap.gas.masses.to_physical().to("Msun").value
     # Dust
-    elif dataset_name == 'dust_frac':
+    elif dataset_name == 'small_dust_frac':
         dfracs = np.zeros_like(snap.gas.masses.value)
         for col in snap.gas.dust_mass_fractions.named_columns:
-            dfracs += getattr(snap.gas.dust_mass_fractions, col).value
+            if 'Small' in col:
+                dfracs += getattr(snap.gas.dust_mass_fractions, col).value
         datasets[dataset_name] = dfracs
+    elif dataset_name == 'large_dust_frac':
+        dfracs = np.zeros_like(snap.gas.masses.value)
+        for col in snap.gas.dust_mass_fractions.named_columns:
+            if 'Large' in col:
+                dfracs += getattr(snap.gas.dust_mass_fractions, col).value
+        datasets[dataset_name] = dfracs
+    elif dataset_name == 'small_dust_mass':
+        datasets[dataset_name] = load_dataset('small_dust_frac') * load_dataset('mass')
+    elif dataset_name == 'large_dust_mass':
+        datasets[dataset_name] = load_dataset('large_dust_frac') * load_dataset('mass')
     elif dataset_name == 'dust_mass':
-        dfracs = load_dataset('dust_frac')
-        mass = load_dataset('mass')
-        datasets[dataset_name] = dfracs * mass
+        datasets[dataset_name] = load_dataset('small_dust_mass') + load_dataset('large_dust_mass')
     # Metals
     elif dataset_name == 'metal_frac':
         datasets[dataset_name] = snap.gas.metal_mass_fractions.value
@@ -129,12 +150,15 @@ def load_dataset(dataset_name):
         metal_frac = load_dataset('metal_frac')
         mass = load_dataset('mass')
         datasets[dataset_name] = metal_frac * mass
-    # HI
+    # HI / H2
     elif dataset_name == 'hydrogen_frac':
         datasets[dataset_name] = snap.gas.element_mass_fractions.hydrogen.value
     elif dataset_name == 'HI_mass':
-        sfrac = snap.gas.species_fractions.HI.value * load_dataset('hydrogen_frac')
-        datasets[dataset_name] = sfrac * load_dataset('mass')
+        mfrac = snap.gas.species_fractions.HI.value * load_dataset('hydrogen_frac')
+        datasets[dataset_name] = mfrac * load_dataset('mass')
+    elif dataset_name == 'H2_mass':
+        mfrac = 2 * snap.gas.species_fractions.H2.value * load_dataset('hydrogen_frac')
+        datasets[dataset_name] = mfrac * load_dataset('mass')
     else:
         raise NotImplementedError
     return datasets[dataset_name]
@@ -233,6 +257,14 @@ if args.generate_data:
                 dataset_name_weights_1='metal_mass',
                 dataset_name_weights_2='dust_mass',
             )
+        elif plot_name == 'density_temperature_small_to_large':
+            create_2Dhistogram(
+                plot_name, 
+                'density', 
+                'temperature', 
+                dataset_name_weights_1='large_dust_mass',
+                dataset_name_weights_2='small_dust_mass',
+            )
         elif plot_name == 'density_temperature_HI_frac':
             create_2Dhistogram(
                 plot_name, 
@@ -240,6 +272,14 @@ if args.generate_data:
                 'temperature', 
                 dataset_name_weights_1='mass',
                 dataset_name_weights_2='HI_mass',
+            )
+        elif plot_name == 'density_temperature_H2_frac':
+            create_2Dhistogram(
+                plot_name, 
+                'density', 
+                'temperature', 
+                dataset_name_weights_1='mass',
+                dataset_name_weights_2='H2_mass',
             )
         else:
             raise NotImplementedError
@@ -341,6 +381,13 @@ for plot_name in plot_names:
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
         cbar_label = f"Dust to Metal Ratio"
+    elif plot_name == 'density_temperature_small_to_large':
+        norm = LogNorm(
+            vmin=parameters['small_to_large_cbar_lim'][0], 
+            vmax=parameters['small_to_large_cbar_lim'][1],
+        )
+        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        cbar_label = f"Small Dust to Large Dust Ratio"
     elif plot_name == 'density_temperature_HI_frac':
         norm = LogNorm(
             vmin=parameters['HI_frac_cbar_lim'][0], 
@@ -348,6 +395,13 @@ for plot_name in plot_names:
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
         cbar_label = f"HI Mass Fraction"
+    elif plot_name == 'density_temperature_H2_frac':
+        norm = LogNorm(
+            vmin=parameters['H2_frac_cbar_lim'][0], 
+            vmax=parameters['H2_frac_cbar_lim'][1],
+        )
+        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        cbar_label = r"$\rm{H_2}$ Mass Fraction"
     else:
         raise NotImplementedError
 

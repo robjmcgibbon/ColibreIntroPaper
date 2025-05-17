@@ -152,6 +152,39 @@ prop_info =  {
         ([1e-3, 1e1], "log"),
         False,
     ),
+    'birth_temperatures_mass_split': (
+        [
+            (
+                load_stellar_birth_temperatures,
+                unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
+                "-",
+                None,
+            ),
+        ],
+        [
+            (
+                mask_galaxy_mass(10**7, 10**8),
+                '-',
+                r'$10^{7}$ < $M_*$/$\rm{M_\odot}$ < $10^{8}$',
+            ),
+            (
+                mask_galaxy_mass(10**8.75, 10**9.75),
+                '--',
+                r'$10^{8.75}$ < $M_*$/$\rm{M_\odot}$ < $10^{9.75}$',
+            ),
+            (
+                mask_galaxy_mass(10**10.5, 10**11.5),
+                ':',
+                r'$10^{10.5}$ < $M_*$/$\rm{M_\odot}$ < $10^{11.5}$',
+            ),
+        ],
+        False,
+        "Birth temperature $T$ [K]",
+        "$n_{\\rm bin}$ / d$\\log_{10}T$ / $n_{\\rm total}$",
+        (None, "log"),
+        ([1e-3, 5e1], "log"),
+        False,
+    ),
     'birth_temperatures_lin': (
         [
             (

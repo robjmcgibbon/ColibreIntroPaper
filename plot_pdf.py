@@ -6,6 +6,7 @@ import argparse
 import os
 
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 from matplotlib.ticker import LogLocator
 import numpy as np
 import unyt
@@ -375,6 +376,8 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
     # h = (0.97 - 0.12) * 4 / (0.97 - 0.19)
     # fig, ax = plt.subplots(1, figsize=(5, h), constrained_layout=False)
     # plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.19)
+    path_effects = [pe.Stroke(linewidth=1.5, foreground="k"), pe.Normal()]
+    lw = 1
 
     # Store objects we want to appear in the legends
     sim_legend_lines = []
@@ -428,24 +431,24 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
                 # Add label to indicate sim name
                 label, color, _ = helpers.get_sim_plot_style(sim)
                 if (i_prop == 0) & (i_mask == 0):
-                    line, = ax.plot(np.mean(centres), np.mean(y_points), label=label, color=color, ls=prop_ls)
+                    line, = ax.plot(np.mean(centres), np.mean(y_points), label=label, color=color, ls=prop_ls, path_effects=path_effects, lw=lw)
                     sim_legend_lines.append(line)
 
                 if load_mask is not None:
-                    ax.plot(centres, y_points, color=color, ls=mask_ls)
+                    ax.plot(centres, y_points, color=color, ls=mask_ls, path_effects=path_effects, lw=lw)
                     if (i_prop == 0) & (i_sim == 0):
-                        line, = ax.plot(centres[0], y_points[0], color='k', ls=mask_ls, label=mask_label)
+                        line, = ax.plot(centres[0], y_points[0], color='k', ls=mask_ls, label=mask_label, path_effects=path_effects, lw=lw)
                         mask_legend_lines.append(line)
                     if plot_median:
-                        ax.axvline(np.median(prop), color=color, ls=mask_ls)
+                        ax.axvline(np.median(prop), color=color, ls=mask_ls, path_effects=path_effects, lw=lw)
                     plot_prop_label = False
                 else:
-                    ax.plot(centres, y_points, color=color, ls=prop_ls)
+                    ax.plot(centres, y_points, color=color, ls=prop_ls, path_effects=path_effects, lw=lw)
                     if plot_median:
-                        ax.axvline(np.median(prop), color=color, ls=prop_ls)
+                        ax.axvline(np.median(prop), color=color, ls=prop_ls, path_effects=path_effects, lw=lw)
 
         if plot_prop_label and (prop_label is not None):
-            line, = ax.plot(centres[0], y_points[0], color='k', ls=prop_ls, label=prop_label)
+            line, = ax.plot(centres[0], y_points[0], color='k', ls=prop_ls, label=prop_label, path_effects=path_effects, lw=lw)
             prop_legend_lines.append(line)
 
     legend = ax.legend(handles=sim_legend_lines, loc="upper right", markerfirst=False)

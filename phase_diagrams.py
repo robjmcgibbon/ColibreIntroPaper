@@ -364,7 +364,7 @@ for plot_name in plot_names:
         cbar_label = "Number of particles"
     elif plot_name == 'density_pressure':
         mappable = plot_2Dhistogram('density', 'pressure')
-        ax.set_ylabel("Pressure $P / k_B$ [K cm$^{-3}$]")
+        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
         cbar_label = "Number of particles"
     elif plot_name == 'density_temperature_metallicity':
         norm = Normalize(

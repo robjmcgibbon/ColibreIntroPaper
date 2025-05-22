@@ -19,7 +19,7 @@ def get_sim_plot_style(sim):
         ls = '-'
     elif 'HYBRID' in sim:
         ls = '--'
-        label += ' h'
+        label += 'h'
     else:
         raise NotImplementedError('Sim must contain THERMAL/HYBRID')
 

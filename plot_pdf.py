@@ -266,7 +266,7 @@ prop_info =  {
         ],
         None,
         False,
-        r"Velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\left(\sqrt{\frac{T}{10^4{\rm K}}} 13.8 \rm{km \;s^{-1}} \right)$",
+        r"Velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\sigma_{\rm th}$",
         "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
         ([1e-1, 1e3], "log"),
         ([1e-3, 1e1], "log"),
@@ -300,7 +300,7 @@ prop_info =  {
             ),
         ],
         False,
-        r"Velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\left(\sqrt{\frac{T}{10^4{\rm K}}} 13.8 \rm{km \;s^{-1}} \right)$",
+        r"Velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\sigma_{\rm th}$",
         "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
         ([1e-1, 1e3], "log"),
         ([1e-3, 1e1], "log"),
@@ -372,10 +372,6 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
 
     fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
     plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.12)
-    # For velocity_dispersion_ratio
-    # h = (0.97 - 0.12) * 4 / (0.97 - 0.19)
-    # fig, ax = plt.subplots(1, figsize=(5, h), constrained_layout=False)
-    # plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.19)
     path_effects = [pe.Stroke(linewidth=1.5, foreground="k"), pe.Normal()]
     lw = 1
 

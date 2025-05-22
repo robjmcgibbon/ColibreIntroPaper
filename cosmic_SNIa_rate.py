@@ -11,6 +11,7 @@ import glob
 import astropy.cosmology
 import h5py
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 import numpy as np
 import swiftsimio as sw
 import unyt
@@ -57,7 +58,9 @@ for sim in args.sims:
     SNIa_rate = (data["SNIa rate"] * SNIa_rate_units).to(SNIa_rate_output_units)
 
     label, color, ls = helpers.get_sim_plot_style(sim)
-    ax.plot(scale_factor, SNIa_rate.value * multiplicative_factor, label=label, color=color, ls=ls, zorder=10000)
+    path_effects = [pe.Stroke(linewidth=1.5, foreground="k"), pe.Normal()]
+    lw = 1
+    ax.plot(scale_factor, SNIa_rate.value * multiplicative_factor, label=label, color=color, ls=ls, lw=lw, zorder=10000, path_effects=path_effects)
 ax.legend()
 
 # Plot observational data

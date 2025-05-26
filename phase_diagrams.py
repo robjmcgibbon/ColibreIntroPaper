@@ -38,6 +38,7 @@ parameters = {
     'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),     # K
     'pressure_ylim': np.array([10 ** (-8.0), 10 ** 12.0]),      # K/cm^1
     'metallicity_cbar_lim': np.array([-3, 0.5]),                # dimensionless (log)
+    'solar_metal_frac_cbar_lim': np.array([1e-3, 2e0]),       # dimensionless
     'dust_to_metal_cbar_lim': np.array([1e-2, 7e-1]),           # dimensionless
     'small_to_large_cbar_lim': np.array([1e-2, 1e0]),           # dimensionless
     'HI_frac_cbar_lim': np.array([1e-3, 1]),                    # dimensionless
@@ -72,11 +73,16 @@ plot_names = {
         'density_bounds',
         'pressure_bounds',
     ],
-    'density_temperature_metallicity': [
+    # 'density_temperature_metallicity': [
+    #     'n_bin',
+    #     'density_bounds',
+    #     'temperature_bounds',
+    #     'min_metallicity',
+    # ],
+    'density_temperature_solar_metal_frac': [
         'n_bin',
         'density_bounds',
         'temperature_bounds',
-        'min_metallicity',
     ],
     'density_temperature_dust_to_metal': [
         'n_bin',
@@ -159,10 +165,14 @@ def load_dataset(dataset_name):
     # Metals
     elif dataset_name == 'metal_frac':
         datasets[dataset_name] = snap.gas.metal_mass_fractions.value
-    elif dataset_name == 'floor_metallicity':
+    elif dataset_name == 'solar_metal_frac':
         solar_metal_frac = 0.0134
+        datasets[dataset_name] = load_dataset('metal_frac') / solar_metal_frac
+    elif dataset_name == 'solar_metal_mass':
+        datasets[dataset_name] = load_dataset('solar_metal_frac') * load_dataset('mass')
+    elif dataset_name == 'floor_metallicity':
         min_metallicity = 10 ** parameters['min_metallicity']
-        metallicity = load_dataset('metal_frac').copy() / solar_metal_frac
+        metallicity = load_dataset('solar_metal_frac').copy()
         metallicity[metallicity < min_metallicity] = min_metallicity
         datasets[dataset_name] = np.log10(metallicity)
     elif dataset_name == 'metal_mass':
@@ -303,6 +313,14 @@ if args.generate_data:
                 'density', 
                 'temperature', 
                 dataset_name_weights_2='floor_metallicity',
+            )
+        elif plot_name == 'density_temperature_solar_metal_frac':
+            create_2Dhistogram(
+                plot_name, 
+                'density', 
+                'temperature', 
+                dataset_name_weights_1='mass',
+                dataset_name_weights_2='solar_metal_mass',
             )
         elif plot_name == 'density_temperature_dust_to_metal':
             create_2Dhistogram(
@@ -452,6 +470,13 @@ for plot_name in plot_names:
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
         cbar_label = r"$\left<\left[Z/Z_{\odot}\right]\right>$"
         cbar_label += f'(min $10^{{{parameters["min_metallicity"]}}}$)'
+    elif plot_name == 'density_temperature_solar_metal_frac':
+        norm = LogNorm(
+            vmin=parameters['solar_metal_frac_cbar_lim'][0], 
+            vmax=parameters['solar_metal_frac_cbar_lim'][1],
+        )
+        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        cbar_label = r"$\left<\left[Z/Z_{\odot}\right]\right>$"
     elif plot_name == 'density_temperature_dust_to_metal':
         norm = LogNorm(
             vmin=parameters['dust_to_metal_cbar_lim'][0], 

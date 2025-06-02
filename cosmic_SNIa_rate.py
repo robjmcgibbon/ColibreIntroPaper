@@ -17,6 +17,8 @@ import swiftsimio as sw
 import unyt
 from velociraptor.observations import load_observations
 plt.style.use('./mnras.mplstyle')
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif")
 
 import helpers
 

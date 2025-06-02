@@ -4,6 +4,8 @@ from matplotlib.colors import LogNorm
 import swiftsimio as sw
 import unyt
 plt.style.use('./mnras.mplstyle')
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif")
 
 def Jeans_length_0(nH,T):
     return 5.4 * np.power(T, 1./2.) * np.power(nH, -1./2.)

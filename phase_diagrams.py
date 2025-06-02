@@ -24,6 +24,8 @@ import unyt
 from matplotlib.colors import LogNorm, Normalize
 from matplotlib.animation import FuncAnimation
 plt.style.use('./mnras.mplstyle')
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif")
 
 parameters = {
     # Data generation
@@ -476,28 +478,28 @@ for plot_name in plot_names:
             vmax=parameters['solar_metal_frac_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = r"$\left<\left[Z/Z_{\odot}\right]\right>$"
+        cbar_label = r"$\left<Z/Z_{\odot}\right>$"
     elif plot_name == 'density_temperature_dust_to_metal':
         norm = LogNorm(
             vmin=parameters['dust_to_metal_cbar_lim'][0], 
             vmax=parameters['dust_to_metal_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = f"Dust to Metal Ratio"
+        cbar_label = f"Dust-to-metal ratio"
     elif plot_name == 'density_temperature_small_to_large':
         norm = LogNorm(
             vmin=parameters['small_to_large_cbar_lim'][0], 
             vmax=parameters['small_to_large_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = f"Small Dust to Large Dust Ratio"
+        cbar_label = f"Small-to-large dust grain mass ratio"
     elif plot_name == 'density_temperature_HI_frac':
         norm = LogNorm(
             vmin=parameters['HI_frac_cbar_lim'][0], 
             vmax=parameters['HI_frac_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = f"HI Mass Fraction"
+        cbar_label = r"$\rm{H}\,\textsc{i}$ Mass Fraction"
     elif plot_name == 'density_temperature_H2_frac':
         norm = LogNorm(
             vmin=parameters['H2_frac_cbar_lim'][0], 
@@ -511,14 +513,14 @@ for plot_name in plot_names:
             vmax=parameters['100Myr_feedback_frac_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = r"Fraction received feedback (last 100Myr)"
+        cbar_label = r"Fraction received feedback (last 100 Myr)"
     elif plot_name == '1Gyr_feedback_frac':
         norm = LogNorm(
             vmin=parameters['1Gyr_feedback_frac_cbar_lim'][0], 
             vmax=parameters['1Gyr_feedback_frac_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = r"Fraction received feedback (last 1Gyr)"
+        cbar_label = r"Fraction received feedback (last 1 Gyr)"
     elif plot_name == 'O_over_Fe':
         norm = Normalize(
             vmin=parameters['O_over_Fe_cbar_lim'][0], 

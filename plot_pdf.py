@@ -12,6 +12,8 @@ import numpy as np
 import unyt
 import swiftsimio as sw
 plt.style.use('./mnras.mplstyle')
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif")
 
 import helpers
 

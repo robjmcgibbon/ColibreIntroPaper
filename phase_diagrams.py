@@ -34,7 +34,6 @@ parameters = {
     'density_bounds': np.array([10 ** (-9.5), 1e7]),            # nh/cm^3
     'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),   # K
     'pressure_bounds': np.array([10 ** (-8.0), 10 ** 16.0]),    # K/cm^1
-    'min_metallicity': -4,                                      # dimensionless (log)
     # Plotting only
     'density_xlim': np.array([10 ** (-9.5), 1e7]),              # nh/cm^3
     'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),     # K
@@ -46,8 +45,6 @@ parameters = {
     'HI_frac_cbar_lim': np.array([1e-3, 1]),                    # dimensionless
     'H2_frac_cbar_lim': np.array([1e-3, 1]),                    # dimensionless
     '100Myr_feedback_frac_cbar_lim': np.array([1e-3, 1]),       # dimensionless
-    '1Gyr_feedback_frac_cbar_lim': np.array([1e-3, 1]),         # dimensionless
-    'O_over_Fe_cbar_lim': np.array([-0.1, 0.6]),                # dimensionless (log)
 }
 
 # Arguments passed when running the script
@@ -75,12 +72,6 @@ plot_names = {
         'density_bounds',
         'pressure_bounds',
     ],
-    # 'density_temperature_metallicity': [
-    #     'n_bin',
-    #     'density_bounds',
-    #     'temperature_bounds',
-    #     'min_metallicity',
-    # ],
     'density_temperature_solar_metal_frac': [
         'n_bin',
         'density_bounds',
@@ -111,16 +102,6 @@ plot_names = {
         'density_bounds',
         'temperature_bounds',
     ],
-    # '1Gyr_feedback_frac': [
-    #     'n_bin',
-    #     'density_bounds',
-    #     'temperature_bounds',
-    # ],
-    # 'O_over_Fe': [
-    #     'n_bin',
-    #     'density_bounds',
-    #     'temperature_bounds',
-    # ],
 }
 # Check required parameters are valid
 for plot_name, required_params in plot_names.items():
@@ -172,11 +153,6 @@ def load_dataset(dataset_name):
         datasets[dataset_name] = load_dataset('metal_frac') / solar_metal_frac
     elif dataset_name == 'solar_metal_mass':
         datasets[dataset_name] = load_dataset('solar_metal_frac') * load_dataset('mass')
-    elif dataset_name == 'floor_metallicity':
-        min_metallicity = 10 ** parameters['min_metallicity']
-        metallicity = load_dataset('solar_metal_frac').copy()
-        metallicity[metallicity < min_metallicity] = min_metallicity
-        datasets[dataset_name] = np.log10(metallicity)
     elif dataset_name == 'metal_mass':
         metal_frac = load_dataset('metal_frac')
         mass = load_dataset('mass')
@@ -190,16 +166,6 @@ def load_dataset(dataset_name):
     elif dataset_name == 'H2_mass':
         mfrac = 2 * snap.gas.species_fractions.H2.value * load_dataset('hydrogen_frac')
         datasets[dataset_name] = mfrac * load_dataset('mass')
-    # O / Fe
-    elif dataset_name == 'oxygen_mass':
-        mfrac = snap.gas.element_mass_fractions.oxygen.value
-        datasets[dataset_name] = mfrac * load_dataset('mass')
-    elif dataset_name == 'iron_mass':
-        mfrac = snap.gas.element_mass_fractions.iron.value
-        datasets[dataset_name] = mfrac * load_dataset('mass')
-    elif dataset_name == 'solar_weight_iron_mass':
-        solar_O_over_Fe = 15.488 * (16.0 / 55.845) # Number ratio * mass ratio
-        datasets[dataset_name] = solar_O_over_Fe * load_dataset('iron_mass')
     # Feedback times
     elif dataset_name == 'last_feedback_a':
         last_feedback_a = snap.gas.last_agnfeedback_scale_factors.value
@@ -211,13 +177,6 @@ def load_dataset(dataset_name):
     elif dataset_name == 'feedback_in_last_100Myr':
         cosmo = snap.metadata.cosmology
         target_age = cosmo.age(0) - 100 * astropy.units.Myr
-        target_z = astropy.cosmology.z_at_value(cosmo.age, target_age).value
-        target_a = 1 / (1 + target_z)
-        had_feedback = load_dataset('last_feedback_a') > target_a
-        datasets[dataset_name] = had_feedback
-    elif dataset_name == 'feedback_in_last_1Gyr':
-        cosmo = snap.metadata.cosmology
-        target_age = cosmo.age(0) - 1 * astropy.units.Gyr
         target_z = astropy.cosmology.z_at_value(cosmo.age, target_age).value
         target_a = 1 / (1 + target_z)
         had_feedback = load_dataset('last_feedback_a') > target_a
@@ -309,13 +268,6 @@ if args.generate_data:
             create_2Dhistogram(plot_name, 'density', 'temperature')
         elif plot_name == 'density_pressure':
             create_2Dhistogram(plot_name, 'density', 'pressure')
-        elif plot_name == 'density_temperature_metallicity':
-            create_2Dhistogram(
-                plot_name, 
-                'density', 
-                'temperature', 
-                dataset_name_weights_2='floor_metallicity',
-            )
         elif plot_name == 'density_temperature_solar_metal_frac':
             create_2Dhistogram(
                 plot_name, 
@@ -362,22 +314,6 @@ if args.generate_data:
                 'density', 
                 'temperature', 
                 dataset_name_weights_2='feedback_in_last_100Myr',
-            )
-        elif plot_name == '1Gyr_feedback_frac':
-            create_2Dhistogram(
-                plot_name, 
-                'density', 
-                'temperature', 
-                dataset_name_weights_2='feedback_in_last_1Gyr',
-            )
-        elif plot_name == 'O_over_Fe':
-            create_2Dhistogram(
-                plot_name, 
-                'density', 
-                'temperature', 
-                dataset_name_weights_1='solar_weight_iron_mass',
-                dataset_name_weights_2='oxygen_mass',
-                log=True,
             )
         else:
             raise NotImplementedError
@@ -464,21 +400,13 @@ for plot_name in plot_names:
         mappable = plot_2Dhistogram('density', 'pressure')
         ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
         cbar_label = "Number of particles"
-    elif plot_name == 'density_temperature_metallicity':
-        norm = Normalize(
-            vmin=parameters['metallicity_cbar_lim'][0], 
-            vmax=parameters['metallicity_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = r"$\left<\left[Z/Z_{\odot}\right]\right>$"
-        cbar_label += f'(min $10^{{{parameters["min_metallicity"]}}}$)'
     elif plot_name == 'density_temperature_solar_metal_frac':
         norm = LogNorm(
             vmin=parameters['solar_metal_frac_cbar_lim'][0], 
             vmax=parameters['solar_metal_frac_cbar_lim'][1],
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = r"$\left<Z/Z_{\odot}\right>$"
+        cbar_label = r"$\left<Z/\rm{Z_{\odot}}\right>$"
     elif plot_name == 'density_temperature_dust_to_metal':
         norm = LogNorm(
             vmin=parameters['dust_to_metal_cbar_lim'][0], 
@@ -514,20 +442,6 @@ for plot_name in plot_names:
         )
         mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
         cbar_label = r"Fraction received feedback (last 100 Myr)"
-    elif plot_name == '1Gyr_feedback_frac':
-        norm = LogNorm(
-            vmin=parameters['1Gyr_feedback_frac_cbar_lim'][0], 
-            vmax=parameters['1Gyr_feedback_frac_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = r"Fraction received feedback (last 1 Gyr)"
-    elif plot_name == 'O_over_Fe':
-        norm = Normalize(
-            vmin=parameters['O_over_Fe_cbar_lim'][0], 
-            vmax=parameters['O_over_Fe_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
-        cbar_label = r"[O/Fe]"
     else:
         raise NotImplementedError
 

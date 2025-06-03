@@ -97,7 +97,7 @@ plot_names = {
         'density_bounds',
         'temperature_bounds',
     ],
-    '100Myr_feedback_frac': [
+    'density_temperature_100Myr_feedback_frac': [
         'n_bin',
         'density_bounds',
         'temperature_bounds',
@@ -308,7 +308,7 @@ if args.generate_data:
                 dataset_name_weights_1='mass',
                 dataset_name_weights_2='H2_mass',
             )
-        elif plot_name == '100Myr_feedback_frac':
+        elif plot_name == 'density_temperature_100Myr_feedback_frac':
             create_2Dhistogram(
                 plot_name, 
                 'density', 
@@ -340,7 +340,13 @@ else:
     # Loading the data into the plot_data dict
     for plot_name, required_params in plot_names.items():
         with h5py.File(data_filename, 'r') as file:
-            group = file[plot_name]
+
+            # TODO: Remove
+            if plot_name == 'density_temperature_100Myr_feedback_frac':
+                group = file['100Myr_feedback_frac']
+            else:
+                group = file[plot_name]
+            # group = file[plot_name]
             for k, v in parameters.items():
                 if not k in required_params:
                     continue
@@ -365,10 +371,16 @@ for plot_name in plot_names:
     data = plot_data[plot_name]
     ax.loglog()
 
-    def plot_2Dhistogram(dataset_name_x, dataset_name_y, norm=None):
+    def plot_2Dhistogram(dataset_name_x, dataset_name_y):
         # Generate histogram
-        if norm is None:
-            norm = LogNorm(vmin=1, vmax=np.max(data['hist']))
+        cbar_lim_name = f'{plot_name.replace("density_temperature_", "")}_cbar_lim'
+        if cbar_lim_name in parameters:
+            vmin = parameters[cbar_lim_name][0]
+            vmax = parameters[cbar_lim_name][1]
+        else:
+            vmin = 1
+            vmax = np.max(data['hist'])
+        norm = LogNorm(vmin=vmin, vmax=vmax)
         mappable = ax.pcolormesh(
             data[f'{dataset_name_x}_edges'], 
             data[f'{dataset_name_y}_edges'], 
@@ -401,46 +413,22 @@ for plot_name in plot_names:
         ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
         cbar_label = "Number of particles"
     elif plot_name == 'density_temperature_solar_metal_frac':
-        norm = LogNorm(
-            vmin=parameters['solar_metal_frac_cbar_lim'][0], 
-            vmax=parameters['solar_metal_frac_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        mappable = plot_2Dhistogram('density', 'temperature')
         cbar_label = r"$\left<Z/\rm{Z_{\odot}}\right>$"
     elif plot_name == 'density_temperature_dust_to_metal':
-        norm = LogNorm(
-            vmin=parameters['dust_to_metal_cbar_lim'][0], 
-            vmax=parameters['dust_to_metal_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        mappable = plot_2Dhistogram('density', 'temperature')
         cbar_label = f"Dust-to-metal ratio"
     elif plot_name == 'density_temperature_small_to_large':
-        norm = LogNorm(
-            vmin=parameters['small_to_large_cbar_lim'][0], 
-            vmax=parameters['small_to_large_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        mappable = plot_2Dhistogram('density', 'temperature')
         cbar_label = f"Small-to-large dust grain mass ratio"
     elif plot_name == 'density_temperature_HI_frac':
-        norm = LogNorm(
-            vmin=parameters['HI_frac_cbar_lim'][0], 
-            vmax=parameters['HI_frac_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        mappable = plot_2Dhistogram('density', 'temperature')
         cbar_label = r"$\rm{H}\,\textsc{i}$ Mass Fraction"
     elif plot_name == 'density_temperature_H2_frac':
-        norm = LogNorm(
-            vmin=parameters['H2_frac_cbar_lim'][0], 
-            vmax=parameters['H2_frac_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+        mappable = plot_2Dhistogram('density', 'temperature')
         cbar_label = r"$\rm{H_2}$ Mass Fraction"
-    elif plot_name == '100Myr_feedback_frac':
-        norm = LogNorm(
-            vmin=parameters['100Myr_feedback_frac_cbar_lim'][0], 
-            vmax=parameters['100Myr_feedback_frac_cbar_lim'][1],
-        )
-        mappable = plot_2Dhistogram('density', 'temperature', norm=norm)
+    elif plot_name == 'density_temperature_100Myr_feedback_frac':
+        mappable = plot_2Dhistogram('density', 'temperature')
         cbar_label = r"Fraction received feedback (last 100 Myr)"
     else:
         raise NotImplementedError

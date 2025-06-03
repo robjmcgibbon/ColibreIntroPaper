@@ -1,11 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+import matplotlib.patheffects as pe
 import swiftsimio as sw
 import unyt
+import helpers
 plt.style.use('./mnras.mplstyle')
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
+path_effects = [pe.Stroke(linewidth=2.5, foreground="k"), pe.Normal()]
 
 def Jeans_length_0(nH,T):
     return 5.4 * np.power(T, 1./2.) * np.power(nH, -1./2.)
@@ -27,7 +30,7 @@ lognH_min    = -12.
 lognH_max    = 8.
 dlognH       = 0.01
 
-logT_min      = 1.
+logT_min      = 0.8
 logT_max      = 8.
 dlogT         = 0.01
 
@@ -50,96 +53,100 @@ def add_lambdaJs_equal_lsmooth(ax, mB, lsoft, ls = 'dashed', lc = 'r', lw = 2., 
     all_zones[:] = Jeans_length_W(nH_2Darr, T_2Darr, eps) / kernel_size
     CS = ax.contour(10**lognH_2Darr, 10**logT_2Darr, all_zones, levels = [(1.)], colors = lc, linewidths = lw, linestyles = ls)
 
+    for collection in CS.collections:
+        collection.set_path_effects(path_effects)
     return
 
-fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
+# Functions above were provided by Sylvia
 
-# Low res
-add_lambdaJs_equal_lsmooth(ax, 1.5e7, 0, ls=':', lc='#87CEFA')
-# z = 0
-# add_lambdaJs_equal_lsmooth(ax, 1.5e7, 1400, ls='-', lc='#87CEFA')
-# z = 4
-add_lambdaJs_equal_lsmooth(ax, 1.5e7, 3600 / 5, ls='-', lc='#87CEFA')
-ax.plot(10**2, 10**4, color='#87CEFA', label='m7')
+for run, snap_nr in [
+    # ('L025_m7/THERMAL_AGN_m7', 127),
+    ('L025_m7/THERMAL_AGN_m7', 56),
+    # ('L100_m6/THERMAL_AGN_m6', 127),
+    # ('L100_m6/THERMAL_AGN_m6', 56),
+    ]:
+    colibre_dir = '/cosma8/data/dp004/colibre/Runs'
+    snap = sw.load(f'{colibre_dir}/{run}/snapshots/colibre_{snap_nr:04}/colibre_{snap_nr:04}.hdf5')
 
-# Mid res
-add_lambdaJs_equal_lsmooth(ax, 1.8e6, 0, ls=':', lc='#FF7F50')
-# z = 0
-# add_lambdaJs_equal_lsmooth(ax, 1.8e6, 700, ls='-', lc='#FF7F50')
-# z = 4
-add_lambdaJs_equal_lsmooth(ax, 1.8e6, 1800 / 5, ls='-', lc='#FF7F50')
-ax.plot(10**2, 10**4, color='#FF7F50', ls='-', label='m6')
+    fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
 
-# High res
-add_lambdaJs_equal_lsmooth(ax, 2.3e5, 0, ls=':', lc='#9E0000')
-# z = 0
-# add_lambdaJs_equal_lsmooth(ax, 2.3e5, 350, ls='-', lc='#9E0000')
-# z = 4
-add_lambdaJs_equal_lsmooth(ax, 2.3e5, 900 / 5, ls='-', lc='#9E0000')
-ax.plot(10**2, 10**4, color='#9E0000', ls='-', label='m5')
+    # Low res
+    _, color, _ = helpers.get_sim_plot_style('L025m7/THERMAL')
+    add_lambdaJs_equal_lsmooth(ax, 1.5e7, 0, ls=':', lc=color)
+    lsoft = {127: 1400, 56: 3600 / 5}[snap_nr]
+    add_lambdaJs_equal_lsmooth(ax, 1.5e7, lsoft, ls='-', lc=color)
+    ax.plot(10**2, 10**4, color=color, label='m7', path_effects=path_effects)
 
-# Line styles
-ax.plot(10**2, 10**4, 'k-', label='$M_{J,soft} = <N_{ngb}> m_g$')
-ax.plot(10**2, 10**4, 'k:', label='$M_J = <N_{ngb}> m_g$')
+    # Mid res
+    _, color, _ = helpers.get_sim_plot_style('L025m6/THERMAL')
+    add_lambdaJs_equal_lsmooth(ax, 1.8e6, 0, ls=':', lc=color)
+    lsoft = {127: 700, 56: 1800 / 5}[snap_nr]
+    add_lambdaJs_equal_lsmooth(ax, 1.8e6, lsoft, ls='-', lc=color)
+    ax.plot(10**2, 10**4, color=color, label='m6', path_effects=path_effects)
 
-########### Adding simulation data
+    # High res
+    _, color, _ = helpers.get_sim_plot_style('L025m5/THERMAL')
+    add_lambdaJs_equal_lsmooth(ax, 2.3e5, 0, ls=':', lc=color)
+    lsoft = {127: 350, 56: 900 / 5}[snap_nr]
+    add_lambdaJs_equal_lsmooth(ax, 2.3e5, lsoft, ls='-', lc=color)
+    ax.plot(10**2, 10**4, color=color, ls='-', label='m5', path_effects=path_effects)
 
-colibre_dir = '/cosma8/data/dp004/colibre/Runs'
-# run, snap_nr = 'L025_m7/THERMAL_AGN_m7', 127
-# run, snap_nr = 'L100_m6/THERMAL_AGN_m6', 127
-run, snap_nr = 'L100_m6/THERMAL_AGN_m6', 56
-snap = sw.load(f'{colibre_dir}/{run}/snapshots/colibre_{snap_nr:04}/colibre_{snap_nr:04}.hdf5')
+    # Line styles
+    ax.plot(10**2, 10**4, 'k-', label='$M_{J,soft} = <N_{ngb}> m_g$')
+    ax.plot(10**2, 10**4, 'k:', label='$M_J = <N_{ngb}> m_g$')
 
-nh = np.log10((snap.gas.densities.to_physical() / unyt.mh).to(unyt.cm ** -3).value)
-T = np.log10(snap.gas.temperatures.to_physical().to("K").value)
-total_mass = np.sum(snap.gas.masses)
-mass_fraction = (snap.gas.masses / total_mass).value
+    ########### Adding simulation data
 
-n_bin = 256
-density_bounds = np.array([10 ** (-9.5), 1e8])            # nh/cm^3
-temperature_bounds = np.array([10 ** (1), 10 ** (12)])    # K
-x_bins = np.linspace(
-    np.log10(density_bounds[0]), 
-    np.log10(density_bounds[1]), 
-    n_bin,
-)
-y_bins = np.linspace(
-    np.log10(temperature_bounds[0]), 
-    np.log10(temperature_bounds[1]), 
-    n_bin,
-)
-H_norm, x_edges, y_edges = np.histogram2d(
-    nh, 
-    T,
-    bins=[x_bins, y_bins],
-    weights=mass_fraction
-)
-hist = H_norm.T
+    nh = np.log10((snap.gas.densities.to_physical() / unyt.mh).to(unyt.cm ** -3).value)
+    T = np.log10(snap.gas.temperatures.to_physical().to("K").value)
+    total_mass = np.sum(snap.gas.masses)
+    mass_fraction = (snap.gas.masses / total_mass).value
 
-vmin = 10**-9
-vmax = 3 * 10**-3
-norm = LogNorm(vmin=vmin, vmax=vmax)
-mappable = ax.pcolormesh(
-    10**x_edges, 
-    10**y_edges, 
-    np.ma.array(hist, mask=(hist==0)), 
-    norm=norm
-)
-fig.colorbar(mappable, ax=ax, label='Mass fraction')
+    n_bin = 256
+    density_bounds = np.array([10 ** (-9.5), 1e8])            # nh/cm^3
+    temperature_bounds = np.array([10 ** (1), 10 ** (12)])    # K
+    x_bins = np.linspace(
+        np.log10(density_bounds[0]), 
+        np.log10(density_bounds[1]), 
+        n_bin,
+    )
+    y_bins = np.linspace(
+        np.log10(temperature_bounds[0]), 
+        np.log10(temperature_bounds[1]), 
+        n_bin,
+    )
+    H_norm, x_edges, y_edges = np.histogram2d(
+        nh, 
+        T,
+        bins=[x_bins, y_bins],
+        weights=mass_fraction
+    )
+    hist = H_norm.T
 
-handles, labels = ax.get_legend_handles_labels()
-legend1 = ax.legend(handles[:3], labels[:3], loc='upper right')
-legend2 = ax.legend(handles[3:], labels[3:], loc='upper left')
-ax.add_artist(legend1)
-ax.add_artist(legend2)
+    vmin = 10**-9
+    vmax = 3 * 10**-3
+    norm = LogNorm(vmin=vmin, vmax=vmax)
+    mappable = ax.pcolormesh(
+        10**x_edges, 
+        10**y_edges, 
+        np.ma.array(hist, mask=(hist==0)), 
+        norm=norm
+    )
+    fig.colorbar(mappable, ax=ax, label='Mass fraction')
 
-ax.set_xlim(density_bounds)
-ax.set_ylim(temperature_bounds)
-ax.loglog()
-ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
-ax.set_ylabel("Temperature [K]")
-outputname = run.replace('/', '_') + f'_s{snap_nr}_grav_instability.png'
-plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
-fig.savefig(outputname, dpi = 250)
-plt.close()
+    handles, labels = ax.get_legend_handles_labels()
+    legend1 = ax.legend(handles[:3], labels[:3], loc='upper right')
+    legend2 = ax.legend(handles[3:], labels[3:], loc='upper left')
+    ax.add_artist(legend1)
+    ax.add_artist(legend2)
+
+    ax.set_xlim(density_bounds)
+    ax.set_ylim(temperature_bounds)
+    ax.loglog()
+    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
+    ax.set_ylabel("Temperature [K]")
+    outputname = run.replace('/', '_') + f'_s{snap_nr}_grav_instability.png'
+    plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
+    fig.savefig(outputname, dpi = 250)
+    plt.close()
 

@@ -24,7 +24,7 @@ parser.add_argument('--sims', nargs='+', type=str, required=True, help="Simulati
 args = parser.parse_args()
 
 # Define plot parameters
-number_of_bins = 256
+number_of_bins = 128
 
 def load_stellar_birth_densities(snap):
     return (snap.stars.birth_densities.to("g/cm**3") / unyt.mh.to("g")).value
@@ -168,17 +168,17 @@ prop_info =  {
             (
                 mask_galaxy_mass(10**7, 10**8),
                 '-',
-                r'$10^{7}$ < $M_*$/$\rm{M_\odot}$ < $10^{8}$',
+                r'$10^{7} < M_* \rm{/} \rm{M_\odot} < 10^{8}$',
             ),
             (
                 mask_galaxy_mass(10**8.75, 10**9.75),
                 '--',
-                r'$10^{8.75}$ < $M_*$/$\rm{M_\odot}$ < $10^{9.75}$',
+                r'$10^{8.75} < M_*$/$\rm{M_\odot} < 10^{9.75}$',
             ),
             (
                 mask_galaxy_mass(10**10.5, 10**11.5),
                 ':',
-                r'$10^{10.5}$ < $M_*$/$\rm{M_\odot}$ < $10^{11.5}$',
+                r'$10^{10.5} < M_*$/$\rm{M_\odot} < 10^{11.5}$',
             ),
         ],
         False,
@@ -288,17 +288,17 @@ prop_info =  {
             (
                 mask_galaxy_mass(10**7, 10**8),
                 '-',
-                r'$10^{7}$ < $M_*$/$\rm{M_\odot}$ < $10^{8}$',
+                r'$10^{7} < M_*$/$\rm{M_\odot} < 10^{8}$',
             ),
             (
                 mask_galaxy_mass(10**8.75, 10**9.75),
                 '--',
-                r'$10^{8.75}$ < $M_*$/$\rm{M_\odot}$ < $10^{9.75}$',
+                r'$10^{8.75} < M_*$/$\rm{M_\odot} < 10^{9.75}$',
             ),
             (
                 mask_galaxy_mass(10**10.5, 10**11.5),
                 ':',
-                r'$10^{10.5}$ < $M_*$/$\rm{M_\odot}$ < $10^{11.5}$',
+                r'$10^{10.5} < M_*$/$\rm{M_\odot} < 10^{11.5}$',
             ),
         ],
         False,

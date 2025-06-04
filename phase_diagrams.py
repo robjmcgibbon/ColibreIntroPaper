@@ -340,13 +340,7 @@ else:
     # Loading the data into the plot_data dict
     for plot_name, required_params in plot_names.items():
         with h5py.File(data_filename, 'r') as file:
-
-            # TODO: Remove
-            if plot_name == 'density_temperature_100Myr_feedback_frac':
-                group = file['100Myr_feedback_frac']
-            else:
-                group = file[plot_name]
-            # group = file[plot_name]
+            group = file[plot_name]
             for k, v in parameters.items():
                 if not k in required_params:
                     continue
@@ -363,6 +357,18 @@ if args.skip_plotting:
     print('Done!')
     exit()
 print('Generating plots')
+
+
+cbar_labels = {
+    'density_temperature': "Number of particles",
+    'density_pressure': "Number of particles",
+    'density_temperature_solar_metal_frac': r"$\left<Z/\rm{Z_{\odot}}\right>$",
+    'density_temperature_dust_to_metal': f"Dust-to-metal ratio",
+    'density_temperature_small_to_large': f"Small-to-large dust grain mass ratio",
+    'density_temperature_HI_frac': r"$\rm{H}\,\textsc{i}$ Mass Fraction",
+    'density_temperature_H2_frac': r"$\rm{H_2}$ Mass Fraction",
+    'density_temperature_100Myr_feedback_frac': r"Fraction received feedback (last 100 Myr)",
+}
 
 
 for plot_name in plot_names:
@@ -401,35 +407,13 @@ for plot_name in plot_names:
         ax.set_ylim(*parameters[f'{dataset_name_y}_ylim'])
         return mappable
 
-    # Most plot are density temperture, so set as defaults
     ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
-    ax.set_ylabel("Temperature [K]")
-
-    if plot_name == 'density_temperature':
-        mappable = plot_2Dhistogram('density', 'temperature')
-        cbar_label = "Number of particles"
-    elif plot_name == 'density_pressure':
+    if plot_name == 'density_pressure':
         mappable = plot_2Dhistogram('density', 'pressure')
         ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
-        cbar_label = "Number of particles"
-    elif plot_name == 'density_temperature_solar_metal_frac':
+    elif 'density_temperature' in plot_name:
         mappable = plot_2Dhistogram('density', 'temperature')
-        cbar_label = r"$\left<Z/\rm{Z_{\odot}}\right>$"
-    elif plot_name == 'density_temperature_dust_to_metal':
-        mappable = plot_2Dhistogram('density', 'temperature')
-        cbar_label = f"Dust-to-metal ratio"
-    elif plot_name == 'density_temperature_small_to_large':
-        mappable = plot_2Dhistogram('density', 'temperature')
-        cbar_label = f"Small-to-large dust grain mass ratio"
-    elif plot_name == 'density_temperature_HI_frac':
-        mappable = plot_2Dhistogram('density', 'temperature')
-        cbar_label = r"$\rm{H}\,\textsc{i}$ Mass Fraction"
-    elif plot_name == 'density_temperature_H2_frac':
-        mappable = plot_2Dhistogram('density', 'temperature')
-        cbar_label = r"$\rm{H_2}$ Mass Fraction"
-    elif plot_name == 'density_temperature_100Myr_feedback_frac':
-        mappable = plot_2Dhistogram('density', 'temperature')
-        cbar_label = r"Fraction received feedback (last 100 Myr)"
+        ax.set_ylabel("Temperature [K]")
     else:
         raise NotImplementedError
 
@@ -445,7 +429,7 @@ for plot_name in plot_names:
         in_layout=False,
     )
 
-    fig.colorbar(mappable, ax=ax, label=cbar_label)
+    fig.colorbar(mappable, ax=ax, label=cbar_labels[plot_name])
     metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
     plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
     fig.savefig(plot_name+'.png', metadata=metadata)

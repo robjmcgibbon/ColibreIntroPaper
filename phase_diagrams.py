@@ -370,49 +370,47 @@ cbar_labels = {
     'density_temperature_100Myr_feedback_frac': r"Fraction received feedback (last 100 Myr)",
 }
 
+def plot_2Dhistogram(plot_data, plot_name, dataset_name_x, dataset_name_y):
+    # Generate histogram
+    data = plot_data[plot_name]
+    cbar_lim_name = f'{plot_name.replace("density_temperature_", "")}_cbar_lim'
+    if cbar_lim_name in parameters:
+        vmin = parameters[cbar_lim_name][0]
+        vmax = parameters[cbar_lim_name][1]
+    else:
+        vmin = 1
+        vmax = np.max(data['hist'])
+    norm = LogNorm(vmin=vmin, vmax=vmax)
+    mappable = ax.pcolormesh(
+        data[f'{dataset_name_x}_edges'], 
+        data[f'{dataset_name_y}_edges'], 
+        np.ma.array(data['hist'], mask=data['hist']==-100), 
+        norm=norm
+    )
+    # Add minor ticks
+    major_xticks = ax.get_xticks()
+    minor_xticks = 10**np.arange(np.log10(major_xticks[0]), np.log10(major_xticks[-1]))
+    ax.set_xticks(minor_xticks, minor=True)
+    ax.set_xticklabels([], minor=True)
+    major_yticks = ax.get_yticks()
+    minor_yticks = 10**np.arange(np.log10(major_yticks[0]), np.log10(major_yticks[-1]))
+    ax.set_yticks(minor_yticks, minor=True)
+    ax.set_yticklabels([], minor=True)
+    # Set axis limits
+    ax.set_xlim(*parameters[f'{dataset_name_x}_xlim'])
+    ax.set_ylim(*parameters[f'{dataset_name_y}_ylim'])
+    return mappable
 
+# Individual plots
 for plot_name in plot_names:
     fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
-
-    data = plot_data[plot_name]
     ax.loglog()
-
-    def plot_2Dhistogram(dataset_name_x, dataset_name_y):
-        # Generate histogram
-        cbar_lim_name = f'{plot_name.replace("density_temperature_", "")}_cbar_lim'
-        if cbar_lim_name in parameters:
-            vmin = parameters[cbar_lim_name][0]
-            vmax = parameters[cbar_lim_name][1]
-        else:
-            vmin = 1
-            vmax = np.max(data['hist'])
-        norm = LogNorm(vmin=vmin, vmax=vmax)
-        mappable = ax.pcolormesh(
-            data[f'{dataset_name_x}_edges'], 
-            data[f'{dataset_name_y}_edges'], 
-            np.ma.array(data['hist'], mask=data['hist']==-100), 
-            norm=norm
-        )
-        # Add minor ticks
-        major_xticks = ax.get_xticks()
-        minor_xticks = 10**np.arange(np.log10(major_xticks[0]), np.log10(major_xticks[-1]))
-        ax.set_xticks(minor_xticks, minor=True)
-        ax.set_xticklabels([], minor=True)
-        major_yticks = ax.get_yticks()
-        minor_yticks = 10**np.arange(np.log10(major_yticks[0]), np.log10(major_yticks[-1]))
-        ax.set_yticks(minor_yticks, minor=True)
-        ax.set_yticklabels([], minor=True)
-        # Set axis limits
-        ax.set_xlim(*parameters[f'{dataset_name_x}_xlim'])
-        ax.set_ylim(*parameters[f'{dataset_name_y}_ylim'])
-        return mappable
-
     ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
     if plot_name == 'density_pressure':
-        mappable = plot_2Dhistogram('density', 'pressure')
+        mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
         ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
     elif 'density_temperature' in plot_name:
-        mappable = plot_2Dhistogram('density', 'temperature')
+        mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'temperature')
         ax.set_ylabel("Temperature [K]")
     else:
         raise NotImplementedError
@@ -434,6 +432,62 @@ for plot_name in plot_names:
     plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
     fig.savefig(plot_name+'.png', metadata=metadata)
     plt.close()
+
+# Combined plots
+fig, axs = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=False)
+plt.subplots_adjust(
+    left=0.07, right=0.975, wspace=0.23,
+    top=0.9, bottom=0.15, hspace=0.15,
+)
+for i_plot, plot_name in enumerate([
+        'density_temperature',
+        'density_pressure',
+    ]):
+    ax = axs[i_plot]
+    ax.loglog()
+    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
+    if plot_name == 'density_pressure':
+        mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
+        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
+    elif 'density_temperature' in plot_name:
+        mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'temperature')
+        ax.set_ylabel("Temperature [K]")
+    else:
+        raise NotImplementedError
+
+    fig.colorbar(mappable, ax=ax, label=cbar_labels[plot_name])
+fig.savefig('density_temperature_pressure.png')
+plt.close()
+
+fig, axs = plt.subplots(3, 2, figsize=(10, 11.5), constrained_layout=False)
+axs = axs.flatten()
+plt.subplots_adjust(
+    left=0.07, right=0.975, wspace=0.23,
+    top=0.9667, bottom=0.05, hspace=0.25,
+)
+for i_plot, plot_name in enumerate([
+        'density_temperature_solar_metal_frac',
+        'density_temperature_100Myr_feedback_frac',
+        'density_temperature_H2_frac',
+        'density_temperature_HI_frac',
+        'density_temperature_dust_to_metal',
+        'density_temperature_small_to_large',
+    ]):
+    ax = axs[i_plot]
+    ax.loglog()
+    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
+    if plot_name == 'density_pressure':
+        mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
+        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
+    elif 'density_temperature' in plot_name:
+        mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'temperature')
+        ax.set_ylabel("Temperature [K]")
+    else:
+        raise NotImplementedError
+
+    fig.colorbar(mappable, ax=ax, label=cbar_labels[plot_name])
+fig.savefig('density_temperature_coloured.png')
+plt.close()
 
 print('Done!')
 

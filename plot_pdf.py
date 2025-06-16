@@ -23,9 +23,6 @@ base_dir = f'/cosma8/data/dp004/colibre/Runs'
 parser.add_argument('--sims', nargs='+', type=str, required=True, help="Simulation names")
 args = parser.parse_args()
 
-# Define plot parameters
-number_of_bins = 128
-
 def load_stellar_birth_densities(snap):
     return (snap.stars.birth_densities.to("g/cm**3") / unyt.mh.to("g")).value
 
@@ -107,7 +104,7 @@ prop_info =  {
                 # Load function for property
                 load_stellar_birth_densities,
                 # Bins when creating histogram
-                unyt.unyt_array(np.logspace(-2, 7, number_of_bins), units="1/cm**3"),
+                unyt.unyt_array(np.logspace(-2, 7, 64), units="1/cm**3"),
                 # Linestyle for this property
                 "-",
                 # Name of property (if plotting multiple properties)
@@ -138,11 +135,44 @@ prop_info =  {
         # Plot median line?
         False,
     ),
+    'birth_densities_mass_split': (
+        [
+            (
+                load_stellar_birth_densities,
+                unyt.unyt_array(np.logspace(-2, 7, 64), units="1/cm**3"),
+                "-",
+                None,
+            ),
+        ],
+        [
+            (
+                mask_galaxy_mass(10**7, 10**8),
+                '-',
+                r'$10^{7} < M_* \rm{/} \rm{M_\odot} < 10^{8}$',
+            ),
+            (
+                mask_galaxy_mass(10**8.75, 10**9.75),
+                '--',
+                r'$10^{8.75} < M_*$/$\rm{M_\odot} < 10^{9.75}$',
+            ),
+            (
+                mask_galaxy_mass(10**10.5, 10**11.5),
+                ':',
+                r'$10^{10.5} < M_*$/$\rm{M_\odot} < 10^{11.5}$',
+            ),
+        ],
+        False,
+        "Birth density $n_{\\rm H}$ [cm$^{-3}$]",
+        "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
+        ([1e-4, 1e7], "log"),
+        ([1e-3, 1e1], "log"),
+        False,
+    ),
     'birth_temperatures': (
         [
             (
                 load_stellar_birth_temperatures,
-                unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
+                unyt.unyt_array(np.logspace(1, 4.5, 128), units="K"),
                 "-",
                 None,
             ),
@@ -159,7 +189,7 @@ prop_info =  {
         [
             (
                 load_stellar_birth_temperatures,
-                unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
+                unyt.unyt_array(np.logspace(1, 4.5, 128), units="K"),
                 "-",
                 None,
             ),
@@ -188,80 +218,11 @@ prop_info =  {
         ([1e-3, 5e1], "log"),
         False,
     ),
-    'birth_temperatures_lin': (
-        [
-            (
-                load_stellar_birth_temperatures,
-                unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
-                "-",
-                None,
-            ),
-        ],
-        None,
-        False,
-        "Birth temperature $T_b$ [K]",
-        "$n_{\\rm bin}$ / d$\\log_{10}T_b$ / $n_{\\rm total}$",
-        (None, "log"),
-        ([1e-3, 5], "linear"),
-        False,
-    ),
-    'birth_temperatures_cumulative_log': (
-        [
-            (
-                load_stellar_birth_temperatures,
-                unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
-                "-",
-                None,
-            ),
-        ],
-        None,
-        True,
-        "Birth temperature $T_b$ [k]",
-        "$n(>T_b)$ / $n_{\\rm total}$",
-        (None, "log"),
-        ([1e-3, 1.1], "log"),
-        False,
-    ),
-    'birth_temperatures_cumulative_lin': (
-        [
-            (
-                load_stellar_birth_temperatures,
-                unyt.unyt_array(np.logspace(1, 4.5, number_of_bins), units="K"),
-                "-",
-                None,
-            ),
-        ],
-        None,
-        True,
-        "Birth temperature $T_b$ [K]",
-        "$n(>T_b)$ / $n_{\\rm total}$",
-        (None, "log"),
-        ([0, 1.1], "linear"),
-        False,
-    ),
-    'birth_velocity_dispersions': (
-        [
-            (
-                load_stellar_birth_velocity_dispersions,
-                unyt.unyt_array(np.logspace(0, 2.5, number_of_bins), units="km/s"),
-                "-",
-                None,
-            ),
-        ],
-        None,
-        False,
-        "Birth velocity dispersion $\\sigma$ [km s$^{-1}$]",
-        "$n_{\\rm bin}$ / d$\\log_{10}\\sigma$ / $n_{\\rm total}$",
-        (None, "log"),
-        ([1e-3, 1e1], "log"),
-        False,
-    ),
     'ratio_birth_velocity_dispersions': (
-        # Note this plot requires the figsize to be changed
         [
             (
                 load_stellar_velocity_dispersion_ratio,
-                unyt.unyt_array(np.logspace(-2, 3, number_of_bins), units="km/s"),
+                unyt.unyt_array(np.logspace(-2, 3, 64), units="km/s"),
                 "-",
                 None,
             ),
@@ -275,11 +236,10 @@ prop_info =  {
         False,
     ),
     'ratio_birth_velocity_dispersions_mass_split': (
-        # Note this plot requires the figsize to be changed
         [
             (
                 load_stellar_velocity_dispersion_ratio,
-                unyt.unyt_array(np.logspace(-2, 3, number_of_bins), units="km/s"),
+                unyt.unyt_array(np.logspace(-2, 3, 64), units="km/s"),
                 "-",
                 None,
             ),
@@ -308,51 +268,17 @@ prop_info =  {
         ([1e-3, 1e1], "log"),
         False,
     ),
-    'densities_at_last_supernova_event': (
-        [
-            (
-                load_snii_gas_densities,
-                unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
-                "-",
-                None,
-            ),
-        ],
-        None,
-        False,
-        "Density of the gas heated by CCSN $\\rho_{\\rm CCSN}$ [$n_{\\rm H}$ cm$^{-3}$]",
-        "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm CCSN}$ / $n_{\\rm total}$",
-        (None, "log"),
-        ([1e-3, 1e1], "log"),
-        False,
-    ),
-    'densities_at_last_agn_event': (
-        [
-            (
-                load_agn_gas_densities,
-                unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
-                "-",
-                None,
-            ),
-        ],
-        None,
-        False,
-        "Density of the gas heated by AGN $\\rho_{\\rm AGN}$ [$n_{\\rm H}$ cm$^{-3}$]",
-        "$n_{\\rm bin}$ / d$\\log_{10}\\rho_{\\rm AGN}$ / $n_{\\rm total}$",
-        ([1e-4, 1e7], "log"),
-        ([1e-3, 1e1], "log"),
-        False,
-    ),
     'ccsn_agn_densities': (
         [
             (
                 load_snii_gas_densities,
-                unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
+                unyt.unyt_array(np.logspace(-5, 7, 64), units="1/cm**3"),
                 "-",
                 "CCSN feedback",
             ),
             (
                 load_agn_gas_densities,
-                unyt.unyt_array(np.logspace(-5, 7, number_of_bins), units="1/cm**3"),
+                unyt.unyt_array(np.logspace(-5, 7, 64), units="1/cm**3"),
                 "--",
                 "AGN feedback",
             ),

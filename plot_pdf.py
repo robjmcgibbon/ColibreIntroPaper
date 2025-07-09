@@ -132,7 +132,7 @@ prop_info =  {
         ([1e-4, 1e7], "log"),
         # (y_axis_limits, x_axis_scale
         ([1e-3, 1e1], "log"),
-        # Plot median line?
+        # Whether to print median values and add median line to plot
         False,
     ),
     'birth_densities_mass_split': (
@@ -363,13 +363,13 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
                     if (i_prop == 0) & (i_sim == 0):
                         line, = ax.plot(centres[0], y_points[0], color='k', ls=mask_ls, label=mask_label, path_effects=path_effects, lw=lw)
                         mask_legend_lines.append(line)
-                    if plot_median:
-                        ax.axvline(np.median(prop), color=color, ls=mask_ls, path_effects=path_effects, lw=lw)
                     plot_prop_label = False
                 else:
                     ax.plot(centres, y_points, color=color, ls=prop_ls, path_effects=path_effects, lw=lw)
-                    if plot_median:
-                        ax.axvline(np.median(prop), color=color, ls=prop_ls, path_effects=path_effects, lw=lw)
+
+                if plot_median:
+                    ax.axvline(np.median(prop), color=color, ls=prop_ls, path_effects=path_effects, lw=lw)
+                    print(f'{sim} {prop_label} median: {np.median(prop):.3g}')
 
         if plot_prop_label and (prop_label is not None):
             line, = ax.plot(centres[0], y_points[0], color='k', ls=prop_ls, label=prop_label, path_effects=path_effects, lw=lw)

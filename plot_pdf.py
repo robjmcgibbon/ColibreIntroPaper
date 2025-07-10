@@ -142,9 +142,13 @@ prop_info =  {
         # (x_axis_limits, x_axis_scale
         ([1e-4, 1e7], "log"),
         # (y_axis_limits, x_axis_scale
-        ([1e-3, 1e1], "log"),
+        ([1e-3, 5e0], "log"),
         # Whether to print median values and add median line to plot
         False,
+        # Where to place legend. -1 for no legend, 0 for legends within plot,
+        # 1 for main legend above plot and second legend within (top left)
+        # 2 for main legend above plot and second legend within (top)
+        1,
     ),
     'birth_densities_mass_split': (
         [
@@ -176,8 +180,9 @@ prop_info =  {
         "Birth density $n_{\\rm H}$ [cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
         ([1e-4, 1e7], "log"),
-        ([1e-3, 1e1], "log"),
+        ([1e-3, 5e0], "log"),
         False,
+        1,
     ),
     'birth_temperatures': (
         [
@@ -193,8 +198,9 @@ prop_info =  {
         "Birth temperature $T$ [K]",
         "$n_{\\rm bin}$ / d$\\log_{10}T$ / $n_{\\rm total}$",
         (None, "log"),
-        ([1e-3, 1e1], "log"),
+        ([1e-3, 5e0], "log"),
         False,
+        -1,
     ),
     'birth_temperatures_mass_split': (
         [
@@ -226,8 +232,9 @@ prop_info =  {
         "Birth temperature $T$ [K]",
         "$n_{\\rm bin}$ / d$\\log_{10}T$ / $n_{\\rm total}$",
         (None, "log"),
-        ([1e-3, 5e1], "log"),
+        ([1e-3, 5e0], "log"),
         False,
+        -1,
     ),
     'ratio_birth_velocity_dispersions': (
         [
@@ -243,8 +250,9 @@ prop_info =  {
         r"Birth velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\sigma_{\rm th}$",
         "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
         ([1e-1, 1e3], "log"),
-        ([1e-3, 1e1], "log"),
+        ([1e-3, 5e0], "log"),
         False,
+        -1,
     ),
     'ratio_birth_velocity_dispersions_mass_split': (
         [
@@ -276,8 +284,9 @@ prop_info =  {
         r"Birth velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\sigma_{\rm th}$      ",
         "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
         ([1e-1, 1e3], "log"),
-        ([1e-3, 1e1], "log"),
+        ([1e-3, 5e0], "log"),
         False,
+        -1,
     ),
     'ccsn_agn_densities': (
         [
@@ -299,18 +308,27 @@ prop_info =  {
         "Density $n_{\\rm H}$ [cm$^{-3}$]",
         "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
         ([1e-4, 1e7], "log"),
-        ([1e-3, 1e1], "log"),
+        ([1e-3, 5e0], "log"),
         False,
+        2,
     ),
 }
 
 snap_data = {}
 soap_data = {}
-for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median) in prop_info.items():
+for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median, legend_pos) in prop_info.items():
     print(f'Loading and plotting {name}')
 
-    fig, ax = plt.subplots(1, figsize=(PLOT_SIZE, PLOT_SIZE * 9 / 10), constrained_layout=False)
-    plt.subplots_adjust(left=0.18, right=0.96, top=0.96, bottom=0.16)
+    left, right, top, bottom = 0.18, 0.96, 0.96, 0.18
+    w = 0.75
+    if legend_pos > 0:
+        r = 1.1
+        fig, ax = plt.subplots(1, figsize=(PLOT_SIZE, r * PLOT_SIZE * w), constrained_layout=False)
+        plt.subplots_adjust(left=left, right=right, top=top/r, bottom=bottom/r)
+    else:
+        fig, ax = plt.subplots(1, figsize=(PLOT_SIZE, PLOT_SIZE * w), constrained_layout=False)
+        plt.subplots_adjust(left=left, right=right, top=top, bottom=bottom)
+
     ax.tick_params(which="both", width=TICK_WIDTH)
     ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
     ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
@@ -401,21 +419,54 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
             line, = ax.plot(centres[0], y_points[0], color='k', ls=prop_ls, label=prop_label, path_effects=path_effects, lw=lw)
             prop_legend_lines.append(line)
 
-    legend = ax.legend(
-        handles=sim_legend_lines,
-        loc="upper right",
-        markerfirst=False,
-        fontsize=LEGEND_SIZE,
-    )
-    ax.add_artist(legend)
-    if len(mask_legend_lines + prop_legend_lines) != 0:
+    if legend_pos == -1:
+        # Don't add a legend
+        pass
+    elif legend_pos == 0:
+        # Add legend within figure
         legend = ax.legend(
-            handles=mask_legend_lines+prop_legend_lines,
-            loc="upper left",
+            handles=sim_legend_lines,
+            loc="upper right",
             markerfirst=False,
             fontsize=LEGEND_SIZE,
         )
         ax.add_artist(legend)
+        if len(mask_legend_lines + prop_legend_lines) != 0:
+            legend = ax.legend(
+                handles=mask_legend_lines+prop_legend_lines,
+                loc="upper left",
+                markerfirst=False,
+                fontsize=LEGEND_SIZE,
+            )
+            ax.add_artist(legend)
+    elif legend_pos > 0:
+        legend = ax.legend(
+            handles=sim_legend_lines,
+            loc="lower center",
+            markerfirst=True,
+            fontsize=LEGEND_SIZE,
+            bbox_to_anchor=(0.5, 1.015),
+            frameon=False,
+            ncol=3,
+        )
+        ax.add_artist(legend)
+        if len(mask_legend_lines + prop_legend_lines) > 0:
+            if legend_pos == 1:
+                legend = ax.legend(
+                    handles=mask_legend_lines+prop_legend_lines,
+                    loc="upper left",
+                    markerfirst=True,
+                    fontsize=LEGEND_SIZE,
+                )
+            elif legend_pos == 2:
+                legend = ax.legend(
+                    handles=mask_legend_lines+prop_legend_lines,
+                    loc="upper center",
+                    markerfirst=True,
+                    fontsize=LEGEND_SIZE,
+                    ncol=3,
+                )
+            ax.add_artist(legend)
 
     ax.set_xlabel(xlabel, fontsize=LABEL_SIZE)
     if 'ratio_birth_velocity_dispersions' in name:

@@ -5,10 +5,22 @@ import matplotlib.patheffects as pe
 import swiftsimio as sw
 import unyt
 import helpers
+
+# Matplotlib setup
+TICK_LENGTH_MAJOR = 9
+TICK_LENGTH_MINOR = 5
+TICK_WIDTH = 1.7
+PLOT_SIZE = 8
+LABEL_SIZE = 30
+LEGEND_SIZE = 21
+LINE_WIDTH = 4
 plt.style.use('./mnras.mplstyle')
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
-path_effects = [pe.Stroke(linewidth=2.5, foreground="k"), pe.Normal()]
+plt.rcParams["ytick.direction"] = "in"
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["axes.linewidth"] = 2
+path_effects = [pe.Stroke(linewidth=LINE_WIDTH + 0.5, foreground="k"), pe.Normal()]
 
 def Jeans_length_0(nH,T):
     return 5.4 * np.power(T, 1./2.) * np.power(nH, -1./2.)
@@ -44,7 +56,7 @@ logT_2Darr  = (np.tile(logT_arr, (len(lognH_arr), 1))).T
 nH_2Darr = np.power(10., lognH_2Darr)
 T_2Darr = np.power(10., logT_2Darr)
 
-def add_lambdaJs_equal_lsmooth(ax, mB, lsoft, ls = 'dashed', lc = 'r', lw = 2., lf = 1.):
+def add_lambdaJs_equal_lsmooth(ax, mB, lsoft, ls = 'dashed', lc = 'r', lw = LINE_WIDTH, lf = 1.):
 
     kernel_size = kernel_support_over_smoothing_length * h_smooth(mB, nH_2Darr, 0.0)
 
@@ -60,40 +72,57 @@ def add_lambdaJs_equal_lsmooth(ax, mB, lsoft, ls = 'dashed', lc = 'r', lw = 2., 
 # Functions above were provided by Sylvia
 
 for run, snap_nr in [
-    # ('L025_m7/THERMAL_AGN_m7', 127),
+    ('L025_m7/THERMAL_AGN_m7', 127),
     ('L025_m7/THERMAL_AGN_m7', 56),
     # ('L100_m6/THERMAL_AGN_m6', 127),
     # ('L100_m6/THERMAL_AGN_m6', 56),
     ]:
     colibre_dir = '/cosma8/data/dp004/colibre/Runs'
     snap = sw.load(f'{colibre_dir}/{run}/snapshots/colibre_{snap_nr:04}/colibre_{snap_nr:04}.hdf5')
+    redshift = int(round(snap.metadata.redshift, 0))
 
-    fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
+    fig, ax = plt.subplots(1, figsize=(5/4 * PLOT_SIZE, PLOT_SIZE), constrained_layout=False)
+
+    plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
+    ax.tick_params(which="both", width=TICK_WIDTH)
+    ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    ax.tick_params(
+        axis="both",
+        which="both",
+        pad=8,
+        left=True,
+        right=True,
+        top=True,
+        bottom=True,
+    )
+    ax.xaxis.set_tick_params(labelsize=LABEL_SIZE)
+    ax.yaxis.set_tick_params(labelsize=LABEL_SIZE)
 
     # Low res
     _, color, _ = helpers.get_sim_plot_style('L025m7/THERMAL')
     add_lambdaJs_equal_lsmooth(ax, 1.5e7, 0, ls=':', lc=color)
     lsoft = {127: 1400, 56: 3600 / 5}[snap_nr]
     add_lambdaJs_equal_lsmooth(ax, 1.5e7, lsoft, ls='-', lc=color)
-    ax.plot(10**2, 10**4, color=color, label='m7', path_effects=path_effects)
+    ax.plot(10**2, 10**4, color=color, label='m7', lw=LINE_WIDTH, path_effects=path_effects)
 
     # Mid res
     _, color, _ = helpers.get_sim_plot_style('L025m6/THERMAL')
     add_lambdaJs_equal_lsmooth(ax, 1.8e6, 0, ls=':', lc=color)
     lsoft = {127: 700, 56: 1800 / 5}[snap_nr]
     add_lambdaJs_equal_lsmooth(ax, 1.8e6, lsoft, ls='-', lc=color)
-    ax.plot(10**2, 10**4, color=color, label='m6', path_effects=path_effects)
+    ax.plot(10**2, 10**4, color=color, label='m6', lw=LINE_WIDTH, path_effects=path_effects)
 
     # High res
     _, color, _ = helpers.get_sim_plot_style('L025m5/THERMAL')
     add_lambdaJs_equal_lsmooth(ax, 2.3e5, 0, ls=':', lc=color)
     lsoft = {127: 350, 56: 900 / 5}[snap_nr]
     add_lambdaJs_equal_lsmooth(ax, 2.3e5, lsoft, ls='-', lc=color)
-    ax.plot(10**2, 10**4, color=color, ls='-', label='m5', path_effects=path_effects)
+    ax.plot(10**2, 10**4, color=color, ls='-', label='m5', lw=LINE_WIDTH, path_effects=path_effects)
 
     # Line styles
-    ax.plot(10**2, 10**4, 'k-', label='$M_{J,soft} = <N_{ngb}> m_g$')
-    ax.plot(10**2, 10**4, 'k:', label='$M_J = <N_{ngb}> m_g$')
+    ax.plot(10**2, 10**4, 'k-', label='$M_{J,soft} = <N_{ngb}> m_g$', lw=LINE_WIDTH)
+    ax.plot(10**2, 10**4, 'k:', label='$M_J = <N_{ngb}> m_g$', lw=LINE_WIDTH)
 
     ########### Adding simulation data
 
@@ -132,21 +161,27 @@ for run, snap_nr in [
         np.ma.array(hist, mask=(hist==0)), 
         norm=norm
     )
-    fig.colorbar(mappable, ax=ax, label='Mass fraction')
+    cbar = fig.colorbar(mappable, ax=ax)
+    cbar.set_label(label='Mass fraction', fontsize=LABEL_SIZE)
+    cbar.ax.tick_params(which="both", width=TICK_WIDTH)
+    cbar.ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    cbar.ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    cbar.ax.tick_params(labelsize=LABEL_SIZE)
 
     handles, labels = ax.get_legend_handles_labels()
-    legend1 = ax.legend(handles[:3], labels[:3], loc='upper right')
-    legend2 = ax.legend(handles[3:], labels[3:], loc='upper left')
+    legend1 = ax.legend(handles[:3], labels[:3], loc='upper right', fontsize=LEGEND_SIZE)
+    legend2 = ax.legend(handles[3:], labels[3:], loc='upper left', fontsize=LEGEND_SIZE)
     ax.add_artist(legend1)
     ax.add_artist(legend2)
+
+    ax.set_title(f'$z={redshift}$', fontsize=LABEL_SIZE)
 
     ax.set_xlim(density_bounds)
     ax.set_ylim(temperature_bounds)
     ax.loglog()
-    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
-    ax.set_ylabel("Temperature [K]")
+    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]", fontsize=LABEL_SIZE)
+    ax.set_ylabel("Temperature [K]", fontsize=LABEL_SIZE)
     outputname = run.replace('/', '_') + f'_s{snap_nr}_grav_instability.png'
-    plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
     fig.savefig(outputname, dpi = 250)
     plt.close()
 

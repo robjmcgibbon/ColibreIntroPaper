@@ -11,11 +11,22 @@ from matplotlib.ticker import LogLocator
 import numpy as np
 import unyt
 import swiftsimio as sw
+
+import helpers
+
+# Matplotlib setup
+TICK_LENGTH_MAJOR = 9
+TICK_LENGTH_MINOR = 5
+TICK_WIDTH = 1.7
+PLOT_SIZE = 8
+LABEL_SIZE = 30
+LEGEND_SIZE = 21
 plt.style.use('./mnras.mplstyle')
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
-
-import helpers
+plt.rcParams["ytick.direction"] = "in"
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["axes.linewidth"] = 2
 
 # Arguments passed when running the script
 parser = argparse.ArgumentParser()
@@ -229,7 +240,7 @@ prop_info =  {
         ],
         None,
         False,
-        r"Velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\sigma_{\rm th}$",
+        r"Birth velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\sigma_{\rm th}$",
         "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
         ([1e-1, 1e3], "log"),
         ([1e-3, 1e1], "log"),
@@ -262,7 +273,7 @@ prop_info =  {
             ),
         ],
         False,
-        r"Velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\sigma_{\rm th}$",
+        r"Birth velocity dispersion ratio $r = \sigma_{\rm turb}$ / $\sigma_{\rm th}$      ",
         "$n_{\\rm bin}$ / d$\\log_{10}r$ / $n_{\\rm total}$",
         ([1e-1, 1e3], "log"),
         ([1e-3, 1e1], "log"),
@@ -298,10 +309,25 @@ soap_data = {}
 for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median) in prop_info.items():
     print(f'Loading and plotting {name}')
 
-    fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
-    plt.subplots_adjust(left=0.15, right=0.97, top=0.97, bottom=0.12)
-    path_effects = [pe.Stroke(linewidth=1.5, foreground="k"), pe.Normal()]
-    lw = 1
+    fig, ax = plt.subplots(1, figsize=(PLOT_SIZE, PLOT_SIZE * 9 / 10), constrained_layout=False)
+    plt.subplots_adjust(left=0.18, right=0.96, top=0.96, bottom=0.16)
+    ax.tick_params(which="both", width=TICK_WIDTH)
+    ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    ax.tick_params(
+        axis="both",
+        which="both",
+        pad=8,
+        left=True,
+        right=True,
+        top=True,
+        bottom=True,
+    )
+    ax.xaxis.set_tick_params(labelsize=LABEL_SIZE)
+    ax.yaxis.set_tick_params(labelsize=LABEL_SIZE)
+
+    path_effects = [pe.Stroke(linewidth=4.5, foreground="k"), pe.Normal()]
+    lw = 4
 
     # Store objects we want to appear in the legends
     sim_legend_lines = []
@@ -375,14 +401,26 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
             line, = ax.plot(centres[0], y_points[0], color='k', ls=prop_ls, label=prop_label, path_effects=path_effects, lw=lw)
             prop_legend_lines.append(line)
 
-    legend = ax.legend(handles=sim_legend_lines, loc="upper right", markerfirst=False)
+    legend = ax.legend(
+        handles=sim_legend_lines,
+        loc="upper right",
+        markerfirst=False,
+        fontsize=LEGEND_SIZE,
+    )
     ax.add_artist(legend)
     if len(mask_legend_lines + prop_legend_lines) != 0:
-        legend = ax.legend(handles=mask_legend_lines+prop_legend_lines, loc="upper left", markerfirst=False)
+        legend = ax.legend(
+            handles=mask_legend_lines+prop_legend_lines,
+            loc="upper left",
+            markerfirst=False,
+            fontsize=LEGEND_SIZE,
+        )
         ax.add_artist(legend)
 
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel, fontsize=LABEL_SIZE)
+    if 'ratio_birth_velocity_dispersions' in name:
+        ax.xaxis.set_label_coords(0.4, -0.1)
+    ax.set_ylabel(ylabel, fontsize=LABEL_SIZE)
     if xaxis[0] is not None:
         ax.set_xlim(left=xaxis[0][0], right=xaxis[0][1])
     if yaxis[0] is not None:

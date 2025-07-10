@@ -23,9 +23,20 @@ import swiftsimio as sw
 import unyt
 from matplotlib.colors import LogNorm, Normalize
 from matplotlib.animation import FuncAnimation
+
+# Matplotlib setup
+TICK_LENGTH_MAJOR = 9
+TICK_LENGTH_MINOR = 5
+TICK_WIDTH = 1.7
+PLOT_SIZE = 8
+LABEL_SIZE = 30
+LEGEND_SIZE = 21
 plt.style.use('./mnras.mplstyle')
 plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
+plt.rcParams["ytick.direction"] = "in"
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["axes.linewidth"] = 2
 
 parameters = {
     # Data generation
@@ -403,15 +414,31 @@ def plot_2Dhistogram(plot_data, plot_name, dataset_name_x, dataset_name_y):
 
 # Individual plots
 for plot_name in plot_names:
-    fig, ax = plt.subplots(1, figsize=(5, 4), constrained_layout=False)
+    fig, ax = plt.subplots(1, figsize=(5/4 * PLOT_SIZE, PLOT_SIZE), constrained_layout=False)
+    plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
+    ax.tick_params(which="both", width=TICK_WIDTH)
+    ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    ax.tick_params(
+        axis="both",
+        which="both",
+        pad=8,
+        left=True,
+        right=True,
+        top=True,
+        bottom=True,
+    )
+    ax.xaxis.set_tick_params(labelsize=LABEL_SIZE)
+    ax.yaxis.set_tick_params(labelsize=LABEL_SIZE)
+
     ax.loglog()
-    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
+    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]", fontsize=LABEL_SIZE)
     if plot_name == 'density_pressure':
         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
-        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
+        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]", fontsize=LABEL_SIZE)
     elif 'density_temperature' in plot_name:
         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'temperature')
-        ax.set_ylabel("Temperature [K]")
+        ax.set_ylabel("Temperature [K]", fontsize=LABEL_SIZE)
     else:
         raise NotImplementedError
 
@@ -427,14 +454,19 @@ for plot_name in plot_names:
         in_layout=False,
     )
 
-    fig.colorbar(mappable, ax=ax, label=cbar_labels[plot_name])
+    cbar = fig.colorbar(mappable, ax=ax)
+    cbar.set_label(label=cbar_labels[plot_name], fontsize=LABEL_SIZE)
+    cbar.ax.tick_params(which="both", width=TICK_WIDTH)
+    cbar.ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    cbar.ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    cbar.ax.tick_params(labelsize=LABEL_SIZE)
+
     metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
-    plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
     fig.savefig(plot_name+'.png', metadata=metadata)
     plt.close()
 
 # Combined plots
-fig, axs = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=False)
+fig, axs = plt.subplots(1, 2, figsize=(10/4 * PLOT_SIZE, PLOT_SIZE), constrained_layout=False)
 plt.subplots_adjust(
     left=0.07, right=0.975, wspace=0.23,
     top=0.9, bottom=0.15, hspace=0.15,
@@ -444,22 +476,42 @@ for i_plot, plot_name in enumerate([
         'density_pressure',
     ]):
     ax = axs[i_plot]
+    ax.tick_params(which="both", width=TICK_WIDTH)
+    ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    ax.tick_params(
+        axis="both",
+        which="both",
+        pad=8,
+        left=True,
+        right=True,
+        top=True,
+        bottom=True,
+    )
+    ax.xaxis.set_tick_params(labelsize=LABEL_SIZE)
+    ax.yaxis.set_tick_params(labelsize=LABEL_SIZE)
     ax.loglog()
-    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
+    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]", fontsize=LABEL_SIZE)
     if plot_name == 'density_pressure':
         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
-        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
+        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]", fontsize=LABEL_SIZE)
     elif 'density_temperature' in plot_name:
         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'temperature')
-        ax.set_ylabel("Temperature [K]")
+        ax.set_ylabel("Temperature [K]", fontsize=LABEL_SIZE)
     else:
         raise NotImplementedError
 
-    fig.colorbar(mappable, ax=ax, label=cbar_labels[plot_name])
+    cbar = fig.colorbar(mappable, ax=ax)
+    cbar.set_label(label=cbar_labels[plot_name], fontsize=LABEL_SIZE)
+    cbar.ax.tick_params(which="both", width=TICK_WIDTH)
+    cbar.ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    cbar.ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    cbar.ax.tick_params(labelsize=LABEL_SIZE)
+
 fig.savefig('density_temperature_pressure.png')
 plt.close()
 
-fig, axs = plt.subplots(3, 2, figsize=(10, 11.5), constrained_layout=False)
+fig, axs = plt.subplots(3, 2, figsize=(10 / 4 * PLOT_SIZE, 11.5 / 4 * PLOT_SIZE), constrained_layout=False)
 axs = axs.flatten()
 plt.subplots_adjust(
     left=0.07, right=0.975, wspace=0.23,
@@ -474,18 +526,37 @@ for i_plot, plot_name in enumerate([
         'density_temperature_small_to_large',
     ]):
     ax = axs[i_plot]
+    ax.tick_params(which="both", width=TICK_WIDTH)
+    ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    ax.tick_params(
+        axis="both",
+        which="both",
+        pad=8,
+        left=True,
+        right=True,
+        top=True,
+        bottom=True,
+    )
+    ax.xaxis.set_tick_params(labelsize=LABEL_SIZE)
+    ax.yaxis.set_tick_params(labelsize=LABEL_SIZE)
     ax.loglog()
-    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]")
+    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]", fontsize=LABEL_SIZE)
     if plot_name == 'density_pressure':
         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
-        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]")
+        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]", fontsize=LABEL_SIZE)
     elif 'density_temperature' in plot_name:
         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'temperature')
-        ax.set_ylabel("Temperature [K]")
+        ax.set_ylabel("Temperature [K]", fontsize=LABEL_SIZE)
     else:
         raise NotImplementedError
 
-    fig.colorbar(mappable, ax=ax, label=cbar_labels[plot_name])
+    cbar = fig.colorbar(mappable, ax=ax)
+    cbar.set_label(label=cbar_labels[plot_name], fontsize=LABEL_SIZE)
+    cbar.ax.tick_params(which="both", width=TICK_WIDTH)
+    cbar.ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    cbar.ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    cbar.ax.tick_params(labelsize=LABEL_SIZE)
 fig.savefig('density_temperature_coloured.png')
 plt.close()
 

@@ -162,7 +162,7 @@ prop_info =  {
         [
             (
                 mask_galaxy_mass(10**7, 10**8),
-                '-',
+                ':',
                 r'$10^{7} < M_* \rm{/} \rm{M_\odot} < 10^{8}$',
             ),
             (
@@ -172,7 +172,7 @@ prop_info =  {
             ),
             (
                 mask_galaxy_mass(10**10.5, 10**11.5),
-                ':',
+                '-',
                 r'$10^{10.5} < M_*$/$\rm{M_\odot} < 10^{11.5}$',
             ),
         ],
@@ -214,7 +214,7 @@ prop_info =  {
         [
             (
                 mask_galaxy_mass(10**7, 10**8),
-                '-',
+                ':',
                 r'$10^{7} < M_* \rm{/} \rm{M_\odot} < 10^{8}$',
             ),
             (
@@ -224,7 +224,7 @@ prop_info =  {
             ),
             (
                 mask_galaxy_mass(10**10.5, 10**11.5),
-                ':',
+                '-',
                 r'$10^{10.5} < M_*$/$\rm{M_\odot} < 10^{11.5}$',
             ),
         ],
@@ -266,7 +266,7 @@ prop_info =  {
         [
             (
                 mask_galaxy_mass(10**7, 10**8),
-                '-',
+                ':',
                 r'$10^{7} < M_*$/$\rm{M_\odot} < 10^{8}$',
             ),
             (
@@ -276,7 +276,7 @@ prop_info =  {
             ),
             (
                 mask_galaxy_mass(10**10.5, 10**11.5),
-                ':',
+                '-',
                 r'$10^{10.5} < M_*$/$\rm{M_\odot} < 10^{11.5}$',
             ),
         ],
@@ -440,6 +440,7 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
             )
             ax.add_artist(legend)
     elif legend_pos > 0:
+        # Add legend above figure
         legend = ax.legend(
             handles=sim_legend_lines,
             loc="lower center",
@@ -448,6 +449,7 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
             bbox_to_anchor=(0.5, 1.015),
             frameon=False,
             ncol=3,
+            columnspacing=0.5,
         )
         ax.add_artist(legend)
         if len(mask_legend_lines + prop_legend_lines) > 0:
@@ -470,7 +472,7 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
 
     ax.set_xlabel(xlabel, fontsize=LABEL_SIZE)
     if 'ratio_birth_velocity_dispersions' in name:
-        ax.xaxis.set_label_coords(0.4, -0.1)
+        ax.xaxis.set_label_coords(0.4, -0.13)
     ax.set_ylabel(ylabel, fontsize=LABEL_SIZE)
     if xaxis[0] is not None:
         ax.set_xlim(left=xaxis[0][0], right=xaxis[0][1])
@@ -479,6 +481,15 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
     if xaxis[1] == "log":
         ax.set_xscale('log')
         ax.xaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100))
+        original_xticks = ax.get_xticks()
+        ax.xaxis.set_major_locator(LogLocator(base=10.0, numticks=100))
+        labelled_xticks = []
+        for x in ax.get_xticks():
+            if x in original_xticks:
+                labelled_xticks.append(f'$10^{{{int(np.log10(x))}}}$')
+            else:
+                labelled_xticks.append('')
+        ax.set_xticklabels(labelled_xticks)
     if yaxis[1] == "log":
         ax.set_yscale('log')
         ax.yaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100))

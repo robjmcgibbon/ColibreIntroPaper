@@ -17,12 +17,13 @@ import os
 import astropy
 import h5py
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+from matplotlib.patches import FancyArrowPatch
+import matplotlib.patheffects as pe
 import numpy as np
 import psutil
 import swiftsimio as sw
 import unyt
-from matplotlib.colors import LogNorm, Normalize
-from matplotlib.animation import FuncAnimation
 
 # Matplotlib setup
 TICK_LENGTH_MAJOR = 9
@@ -398,6 +399,22 @@ def plot_2Dhistogram(plot_data, plot_name, dataset_name_x, dataset_name_y):
         np.ma.array(data['hist'], mask=data['hist']==-100), 
         norm=norm
     )
+    # Plot format
+    ax.tick_params(which="both", width=TICK_WIDTH)
+    ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+    ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+    ax.tick_params(
+        axis="both",
+        which="both",
+        pad=8,
+        left=True,
+        right=True,
+        top=True,
+        bottom=True,
+    )
+    ax.xaxis.set_tick_params(labelsize=LABEL_SIZE)
+    ax.yaxis.set_tick_params(labelsize=LABEL_SIZE)
+    ax.loglog()
     # Add minor ticks
     major_xticks = ax.get_xticks()
     minor_xticks = 10**np.arange(np.log10(major_xticks[0]), np.log10(major_xticks[-1]))
@@ -416,23 +433,7 @@ def plot_2Dhistogram(plot_data, plot_name, dataset_name_x, dataset_name_y):
 for plot_name in plot_names:
     fig, ax = plt.subplots(1, figsize=(5/4 * PLOT_SIZE, PLOT_SIZE), constrained_layout=False)
     plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
-    ax.tick_params(which="both", width=TICK_WIDTH)
-    ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
-    ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
-    ax.tick_params(
-        axis="both",
-        which="both",
-        pad=8,
-        left=True,
-        right=True,
-        top=True,
-        bottom=True,
-    )
-    ax.xaxis.set_tick_params(labelsize=LABEL_SIZE)
-    ax.yaxis.set_tick_params(labelsize=LABEL_SIZE)
-
-    ax.loglog()
-    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]", fontsize=LABEL_SIZE)
+    ax.set_xlabel(r"Density $n_\mathrm{H}$ [cm$^{-3}$]", fontsize=LABEL_SIZE)
     if plot_name == 'density_pressure':
         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
         ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]", fontsize=LABEL_SIZE)
@@ -461,6 +462,42 @@ for plot_name in plot_names:
     cbar.ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
     cbar.ax.tick_params(labelsize=LABEL_SIZE)
 
+    if plot_name == 'density_temperature':
+        for letter, rho, T, letter_rho, letter_T in [
+                ('A', 1e-7, 2e3, 1e-7, 1e2),
+                ('B', 5e-6, 1e6, 5e-9, 7e8),
+                ('C', 3e-4, 2.5e7, 1e-1, 5e8),
+                ('D', 3e-4, 2e4, 1e-5, 5e2),
+                ('E', 1e-2, 8e3, 1e2, 5e5),
+                ('F', 1e-2, 8e1, 1e-2, 5e0),
+                ('G', 1e1, 1.5e7, 1e4, 1e8),
+                ('H', 1e2, 1e4, 1e5, 1e5),
+                ('I', 1e2, 8e1, 1e2, 5e0),
+            ]:
+
+            arrow = FancyArrowPatch(
+                posA=(letter_rho, letter_T), posB=(rho, T),
+                arrowstyle='-|>',
+                mutation_scale=15,
+                color='white',  # main fill color
+                linewidth=1.5
+            )
+            arrow.set_path_effects([
+                pe.Stroke(linewidth=4, foreground='black'),
+                pe.Normal()
+            ])
+            ax.add_patch(arrow)
+
+            ax.text(
+                letter_rho, letter_T,
+                letter,
+                color='black',
+                ha='center', va='center',
+                fontsize=LEGEND_SIZE,
+                weight='bold',
+                bbox=dict(boxstyle='circle', facecolor='white', edgecolor='black')
+            )
+
     metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
     fig.savefig(plot_name+'.png', metadata=metadata)
     plt.close()
@@ -476,22 +513,8 @@ for i_plot, plot_name in enumerate([
         'density_pressure',
     ]):
     ax = axs[i_plot]
-    ax.tick_params(which="both", width=TICK_WIDTH)
-    ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
-    ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
-    ax.tick_params(
-        axis="both",
-        which="both",
-        pad=8,
-        left=True,
-        right=True,
-        top=True,
-        bottom=True,
-    )
-    ax.xaxis.set_tick_params(labelsize=LABEL_SIZE)
-    ax.yaxis.set_tick_params(labelsize=LABEL_SIZE)
-    ax.loglog()
-    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]", fontsize=LABEL_SIZE)
+
+    ax.set_xlabel(r"Density $n_\mathrm{H}$ [cm$^{-3}$]", fontsize=LABEL_SIZE)
     if plot_name == 'density_pressure':
         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
         ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]", fontsize=LABEL_SIZE)
@@ -526,22 +549,8 @@ for i_plot, plot_name in enumerate([
         'density_temperature_small_to_large',
     ]):
     ax = axs[i_plot]
-    ax.tick_params(which="both", width=TICK_WIDTH)
-    ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
-    ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
-    ax.tick_params(
-        axis="both",
-        which="both",
-        pad=8,
-        left=True,
-        right=True,
-        top=True,
-        bottom=True,
-    )
-    ax.xaxis.set_tick_params(labelsize=LABEL_SIZE)
-    ax.yaxis.set_tick_params(labelsize=LABEL_SIZE)
-    ax.loglog()
-    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]", fontsize=LABEL_SIZE)
+
+    ax.set_xlabel(r"Density $n_\mathrm{H}$ [cm$^{-3}$]", fontsize=LABEL_SIZE)
     if plot_name == 'density_pressure':
         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
         ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]", fontsize=LABEL_SIZE)

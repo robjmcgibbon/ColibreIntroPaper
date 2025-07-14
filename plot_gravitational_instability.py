@@ -82,6 +82,7 @@ for run, snap_nr in [
     redshift = int(round(snap.metadata.redshift, 0))
 
     fig, ax = plt.subplots(1, figsize=(5/4 * PLOT_SIZE, PLOT_SIZE), constrained_layout=False)
+    ax.loglog()
 
     plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
     ax.tick_params(which="both", width=TICK_WIDTH)
@@ -121,8 +122,8 @@ for run, snap_nr in [
     ax.plot(10**2, 10**4, color=color, ls='-', label='m5', lw=LINE_WIDTH, path_effects=path_effects)
 
     # Line styles
-    ax.plot(10**2, 10**4, 'k-', label='$M_{J,soft} = <N_{ngb}> m_g$', lw=LINE_WIDTH)
-    ax.plot(10**2, 10**4, 'k:', label='$M_J = <N_{ngb}> m_g$', lw=LINE_WIDTH)
+    ax.plot(10**2, 10**4, 'k-', label=r'$\rm M_{J,soft} = \langle N_{ngb} \rangle \; m_g$', lw=LINE_WIDTH)
+    ax.plot(10**2, 10**4, 'k:', label=r'$\rm M_J = \langle N_{ngb} \rangle \; m_g$', lw=LINE_WIDTH)
 
     ########### Adding simulation data
 
@@ -152,6 +153,7 @@ for run, snap_nr in [
     )
     hist = H_norm.T
 
+    # Colourbar
     vmin = 10**-9
     vmax = 3 * 10**-3
     norm = LogNorm(vmin=vmin, vmax=vmax)
@@ -168,19 +170,29 @@ for run, snap_nr in [
     cbar.ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
     cbar.ax.tick_params(labelsize=LABEL_SIZE)
 
+    # Legends and labels
     handles, labels = ax.get_legend_handles_labels()
     legend1 = ax.legend(handles[:3], labels[:3], loc='upper right', fontsize=LEGEND_SIZE)
     legend2 = ax.legend(handles[3:], labels[3:], loc='upper left', fontsize=LEGEND_SIZE)
     ax.add_artist(legend1)
     ax.add_artist(legend2)
-
     ax.set_title(f'$z={redshift}$', fontsize=LABEL_SIZE)
-
-    ax.set_xlim(density_bounds)
-    ax.set_ylim(temperature_bounds)
-    ax.loglog()
     ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]", fontsize=LABEL_SIZE)
     ax.set_ylabel("Temperature [K]", fontsize=LABEL_SIZE)
+
+    # Add minor ticks and set axis limits
+    major_xticks = ax.get_xticks()
+    minor_xticks = 10**np.arange(np.log10(major_xticks[0]), np.log10(major_xticks[-1]))
+    ax.set_xticks(minor_xticks, minor=True)
+    ax.set_xticklabels([], minor=True)
+    major_yticks = ax.get_yticks()
+    minor_yticks = 10**np.arange(np.log10(major_yticks[0]), np.log10(major_yticks[-1]))
+    ax.set_yticks(minor_yticks, minor=True)
+    ax.set_yticklabels([], minor=True)
+    ax.set_xlim(density_bounds)
+    ax.set_ylim(temperature_bounds)
+
+    # Save
     outputname = run.replace('/', '_') + f'_s{snap_nr}_grav_instability.png'
     fig.savefig(outputname, dpi = 250)
     plt.close()

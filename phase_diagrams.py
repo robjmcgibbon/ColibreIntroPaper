@@ -508,12 +508,12 @@ for plot_name in plot_names:
                 'A': (1.03, 1e0),
                 'B': (1.1, 0.95),
                 'C': (1.01, 0.92),
-                'D': (1.1, 0.97),
+                'D': (1.14, 0.95),
                 'E': (1.05, 0.95),
                 'F': (1.06, 0.98),
-                'G': (1.01, 0.93),
+                'G': (1.03, 0.93),
                 'H': (1.08, 0.96),
-                'I': (1.06, 0.95),
+                'I': (1.07, 0.95),
             }
             # Add the circle
             ax.text(
@@ -538,7 +538,6 @@ for plot_name in plot_names:
     metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
     fig.savefig(plot_name+'.png', metadata=metadata)
     plt.close()
-    exit()
 
 # Combined plots
 fig, axs = plt.subplots(1, 2, figsize=(10/4 * PLOT_SIZE, PLOT_SIZE), constrained_layout=False)

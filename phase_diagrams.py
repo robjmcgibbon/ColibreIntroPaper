@@ -15,10 +15,12 @@ import time
 import os
 
 import astropy
+import cmasher as cmr
+import colorcet as cc
 import h5py
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-from matplotlib.patches import FancyArrowPatch
+from matplotlib.patches import FancyArrowPatch, Circle
 import matplotlib.patheffects as pe
 import numpy as np
 import psutil
@@ -382,6 +384,19 @@ cbar_labels = {
     'density_temperature_100Myr_feedback_frac': r"Fraction received feedback (last 100 Myr)",
 }
 
+cet_L20 = cc.cm.CET_L20
+cet_L20.set_under('black')
+cmaps = {
+    'density_temperature': plt.colormaps['plasma'],
+    'density_pressure': plt.colormaps['plasma'],
+    'density_temperature_solar_metal_frac': cc.cm.CET_L4,
+    'density_temperature_dust_to_metal': cmr.dusk,
+    'density_temperature_small_to_large': plt.colormaps['viridis'],
+    'density_temperature_HI_frac': cet_L20,
+    'density_temperature_H2_frac': cet_L20,
+    'density_temperature_100Myr_feedback_frac': plt.colormaps['inferno'],
+}
+
 def plot_2Dhistogram(plot_data, plot_name, dataset_name_x, dataset_name_y):
     # Generate histogram
     data = plot_data[plot_name]
@@ -397,7 +412,8 @@ def plot_2Dhistogram(plot_data, plot_name, dataset_name_x, dataset_name_y):
         data[f'{dataset_name_x}_edges'], 
         data[f'{dataset_name_y}_edges'], 
         np.ma.array(data['hist'], mask=data['hist']==-100), 
-        norm=norm
+        norm=norm,
+        cmap=cmaps[plot_name],
     )
     # Plot format
     ax.tick_params(which="both", width=TICK_WIDTH)
@@ -488,19 +504,41 @@ for plot_name in plot_names:
             ])
             ax.add_patch(arrow)
 
+            offset = {
+                'A': (1.03, 1e0),
+                'B': (1.1, 0.95),
+                'C': (1.01, 0.92),
+                'D': (1.1, 0.97),
+                'E': (1.05, 0.95),
+                'F': (1.06, 0.98),
+                'G': (1.01, 0.93),
+                'H': (1.08, 0.96),
+                'I': (1.06, 0.95),
+            }
+            # Add the circle
             ax.text(
                 letter_rho, letter_T,
                 letter,
-                color='black',
+                color='white',
                 ha='center', va='center',
                 fontsize=LEGEND_SIZE,
                 weight='bold',
                 bbox=dict(boxstyle='circle', facecolor='white', edgecolor='black')
             )
+            # Add the text (with a slight offset)
+            ax.text(
+                letter_rho*offset[letter][0], letter_T*offset[letter][1],
+                letter,
+                color='black',
+                ha='center', va='center',
+                fontsize=LEGEND_SIZE,
+                weight='bold',
+            )
 
     metadata = {f'plot_info_:{k}': str(v) for k, v in parameters.items()}
     fig.savefig(plot_name+'.png', metadata=metadata)
     plt.close()
+    exit()
 
 # Combined plots
 fig, axs = plt.subplots(1, 2, figsize=(10/4 * PLOT_SIZE, PLOT_SIZE), constrained_layout=False)
@@ -541,10 +579,10 @@ plt.subplots_adjust(
     top=0.9667, bottom=0.05, hspace=0.25,
 )
 for i_plot, plot_name in enumerate([
+        'density_temperature_HI_frac',
+        'density_temperature_H2_frac',
         'density_temperature_solar_metal_frac',
         'density_temperature_100Myr_feedback_frac',
-        'density_temperature_H2_frac',
-        'density_temperature_HI_frac',
         'density_temperature_dust_to_metal',
         'density_temperature_small_to_large',
     ]):

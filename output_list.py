@@ -121,5 +121,5 @@ print((
     "snapshot, and then normalizing. For example, for SFR, we start a clock "
     "precisely 10 Myr before a snapshot dump, accumulate SFR * dt at each "
     "step during that window, and then divide by 10 Myr at the point of writing."
-    "AveragedStarFormationRates for star particles should not be used.\n"
+    " AveragedStarFormationRates for star particles should not be used.\n"
 ))

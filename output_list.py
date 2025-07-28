@@ -23,6 +23,8 @@ corrections = {
     'KickedByJetFeedback': r'Flags the particles that have been directly kicked by an AGN jet feedback event at some point in the past. If greater than 0, contains the number of individual events',
     'GasVelocityDispersions': r'Velocity dispersion (3D) of the gas particles around the black holes. This is $a \sqrt{<|dx/dt|^2> - <|dx/dt|>^2}$ where x is the co-moving position of the particles relative to the black holes.',
     'MinimalSmoothingLengths': 'Minimal smoothing lengths ever reached by the particles',
+    'AveragedStarFormationRates': r'Star formation rates of the particles averaged over the period set by the first two snapshot triggers\textsuperscript{2}',
+    'AveragedAccretionRates': r'Accretion rates of the black holes averaged over the period set by the first two snapshot triggers\textsuperscript{2}',
 }
 
 colibre_dir = '/cosma8/data/dp004/colibre/Runs/'
@@ -58,7 +60,11 @@ for ptype, ptype_name in [
         names, descs = [], []
         with h5py.File(filename, 'r') as file:
             for name in file[f'PartType{ptype}'].keys():
-                desc = file[f'PartType{ptype}/{name}'].attrs['Description'].decode()
+                desc = file[f'PartType{ptype}/{name}'].attrs['Description']
+                try:
+                    desc = desc.decode()
+                except:
+                    pass
                 prop_info[snap_type][name] = desc
 
     # Adding PartType0/HIIregionsEndTime
@@ -108,4 +114,12 @@ table += r"""
 
 print(table)
 
-print(r'\textsuperscript{1} Missing from high redshift snapshots')
+print(r'\textsuperscript{1} Missing from high redshift snapshots'+'\n')
+print((
+    r"\textsuperscript{2} Averaged quantities are calculated by accumulating "
+    "the quantity over the 10 Myr/100 Myr that precedes the writing of a "
+    "snapshot, and then normalizing. For example, for SFR, we start a clock "
+    "precisely 10 Myr before a snapshot dump, accumulate SFR * dt at each "
+    "step during that window, and then divide by 10 Myr at the point of writing."
+    "AveragedStarFormationRates for star particles should not be used.\n"
+))

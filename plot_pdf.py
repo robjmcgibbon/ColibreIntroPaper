@@ -106,6 +106,36 @@ def mask_galaxy_mass(low_mass, high_mass):
         return mask
     return load_masked_galaxy_masses
 
+def mask_galaxy_mass_birth_redshift(low_mass, high_mass, redshift):
+    def load_masked_galaxy_masses(snap, soap):
+        # Create mapping from group_nr_bound to galaxy stellar mass
+        halo_catalogue_idx = soap.input_halos.halo_catalogue_index.value
+        stellar_mass = soap.bound_subhalo.stellar_mass.to('Msun').value
+        stellar_mass_from_halo_catalogue_idx = np.zeros(
+            np.max(halo_catalogue_idx) + 1, dtype=int
+        )
+        stellar_mass_from_halo_catalogue_idx[halo_catalogue_idx] = stellar_mass
+
+        # Use mapping to get host galaxy mass for each particle
+        particle_group_nr_bound = snap.stars.group_nr_bound.value
+        host_galaxy_stellar_mass = np.zeros(particle_group_nr_bound.shape[0])
+        is_bound = particle_group_nr_bound != -1
+        host_galaxy_stellar_mass[is_bound] = stellar_mass_from_halo_catalogue_idx[
+            particle_group_nr_bound[is_bound]
+        ]
+
+        # Create mask based on host_galaxy mass
+        mask = host_galaxy_stellar_mass >= low_mass
+        mask &= host_galaxy_stellar_mass < high_mass
+
+        # Mask based on birth redshift
+        a_limit = 1 / (1 + redshift)
+        mask &= snap.stars.birth_scale_factors.value < a_limit
+        return mask
+    return load_masked_galaxy_masses
+
+
+
 prop_info =  {
     # Name of plot
     'birth_densities': (
@@ -312,6 +342,129 @@ prop_info =  {
         False,
         2,
     ),
+    ### Plots Joop asked for as a check for Shengdong's paper
+    ### NOTE: I need to set the snapshot & SOAP below to z=9
+
+    # 'birth_densities_mass_split_z9': (
+    #     [
+    #         (
+    #             load_stellar_birth_densities,
+    #             unyt.unyt_array(np.logspace(-2, 7, 64), units="1/cm**3"),
+    #             "-",
+    #             None,
+    #         ),
+    #     ],
+    #     [
+    #         (
+    #             mask_galaxy_mass_birth_redshift(10**0, 10**9, 9),
+    #             '-',
+    #             r'$M_* \rm{/} \rm{M_\odot} < 10^{9}, z_{birth} > 9$',
+    #         ),
+    #         (
+    #             mask_galaxy_mass_birth_redshift(10**9, 10**12, 9),
+    #             ':',
+    #             r'$10^{9} < M_* \rm{/} \rm{M_\odot}, z_{birth} > 9$',
+    #         ),
+    #     ],
+    #     False,
+    #     "Birth density $n_{\\rm H}$ [cm$^{-3}$]",
+    #     "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
+    #     ([1e-4, 1e7], "log"),
+    #     # ([1e-3, 5e0], "log"),
+    #     ([1e-4, 5e0], "log"),
+    #     False,
+    #     1,
+    # ),
+    # 'birth_densities_mass_split_z12': (
+    #     [
+    #         (
+    #             load_stellar_birth_densities,
+    #             unyt.unyt_array(np.logspace(-2, 7, 64), units="1/cm**3"),
+    #             "-",
+    #             None,
+    #         ),
+    #     ],
+    #     [
+    #         (
+    #             mask_galaxy_mass_birth_redshift(10**0, 10**9, 12),
+    #             '-',
+    #             r'$M_* \rm{/} \rm{M_\odot} < 10^{9}, z_{birth} > 12$',
+    #         ),
+    #         (
+    #             mask_galaxy_mass_birth_redshift(10**9, 10**12, 12),
+    #             ':',
+    #             r'$10^{9} < M_* \rm{/} \rm{M_\odot}, z_{birth} > 12$',
+    #         ),
+    #     ],
+    #     False,
+    #     "Birth density $n_{\\rm H}$ [cm$^{-3}$]",
+    #     "$n_{\\rm bin}$ / d$\\log_{10}n_{\\rm H}$ / $n_{\\rm total}$",
+    #     ([1e-4, 1e7], "log"),
+    #     # ([1e-3, 5e0], "log"),
+    #     ([1e-4, 5e0], "log"),
+    #     False,
+    #     1,
+    # ),
+    # 'birth_temperatures_mass_split_z12': (
+    #     [
+    #         (
+    #             load_stellar_birth_temperatures,
+    #             unyt.unyt_array(np.logspace(1, 4.5, 128), units="K"),
+    #             "-",
+    #             None,
+    #         ),
+    #     ],
+    #     [
+    #         (
+    #             mask_galaxy_mass_birth_redshift(10**0, 10**9, 12),
+    #             '-',
+    #             r'$M_* \rm{/} \rm{M_\odot} < 10^{9}, z_{birth} > 12$',
+    #         ),
+    #         (
+    #             mask_galaxy_mass_birth_redshift(10**9, 10**12, 12),
+    #             ':',
+    #             r'$10^{9} < M_* \rm{/} \rm{M_\odot}, z_{birth} > 12$',
+    #         ),
+    #     ],
+    #     False,
+    #     "Birth temperature $T$ [K]",
+    #     "$n_{\\rm bin}$ / d$\\log_{10}T$ / $n_{\\rm total}$",
+    #     (None, "log"),
+    #     # ([1e-3, 1e1], "log"),
+    #     ([1e-4, 1e1], "log"),
+    #     False,
+    #     1,
+    # ),
+    # 'birth_temperatures_mass_split_z9': (
+    #     [
+    #         (
+    #             load_stellar_birth_temperatures,
+    #             unyt.unyt_array(np.logspace(1, 4.5, 128), units="K"),
+    #             "-",
+    #             None,
+    #         ),
+    #     ],
+    #     [
+    #         (
+    #             mask_galaxy_mass_birth_redshift(10**0, 10**9, 9),
+    #             '-',
+    #             r'$M_* \rm{/} \rm{M_\odot} < 10^{9}, z_{birth} > 9$',
+    #         ),
+    #         (
+    #             mask_galaxy_mass_birth_redshift(10**9, 10**12, 9),
+    #             ':',
+    #             r'$10^{9} < M_* \rm{/} \rm{M_\odot}, z_{birth} > 9$',
+    #         ),
+    #     ],
+    #     False,
+    #     "Birth temperature $T$ [K]",
+    #     "$n_{\\rm bin}$ / d$\\log_{10}T$ / $n_{\\rm total}$",
+    #     (None, "log"),
+    #     # ([1e-3, 1e1], "log"),
+    #     ([1e-4, 1e1], "log"),
+    #     False,
+    #     1,
+    # ),
 }
 
 snap_data = {}
@@ -363,19 +516,14 @@ for name, (to_plot, masks, cumulative, xlabel, ylabel, xaxis, yaxis, plot_median
         for i_sim, sim in enumerate(args.sims):
             if sim not in snap_data:
                 # Load z=0 data
-                snapshot_filename = f'{base_dir}/{sim}/SOAP/colibre_with_SOAP_membership_0127.hdf5'
-                if not os.path.exists(snapshot_filename):
-                    snapshot_filename = f'{base_dir}/{sim}/SOAP/colibre_with_SOAP_membership_0123.hdf5'
+                snapshot_filename = f'{base_dir}/{sim}/SOAP-HBT/colibre_with_SOAP_membership_0127.hdf5'
                 snap_data[sim] = sw.load(snapshot_filename)
             snap = snap_data[sim]
 
             if masks[0] is not None:
                 if sim not in soap_data:
                     # Load z=0 data
-                    soap_filename = f'{base_dir}/{sim}/SOAP/halo_properties_0127.hdf5'
-                    if not os.path.exists(soap_filename):
-                        soap_filename = f'{base_dir}/{sim}/SOAP/halo_properties_0123.hdf5'
-                    snapshot_filename = f'{base_dir}/{sim}/SOAP/colibre_with_SOAP_membership_0123.hdf5'
+                    soap_filename = f'{base_dir}/{sim}/SOAP-HBT/halo_properties_0127.hdf5'
                     soap_data[sim] = sw.load(soap_filename)
                 soap = soap_data[sim]
 

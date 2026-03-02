@@ -1,0 +1,183 @@
+diff --git a/plot_gravitational_instability.py b/plot_gravitational_instability.py
+index a3f68e4..cd690b9 100644
+--- a/plot_gravitational_instability.py
++++ b/plot_gravitational_instability.py
+@@ -1,3 +1,5 @@
++import os
++
+ import numpy as np
+ import matplotlib.pyplot as plt
+ from matplotlib.colors import LogNorm
+@@ -71,20 +73,44 @@ def add_lambdaJs_equal_lsmooth(ax, mB, lsoft, ls = 'dashed', lc = 'r', lw = LINE
+ 
+ # Functions above were provided by Sylvia
+ 
+-for run, snap_nr in [
+-    ('L025_m7/THERMAL_AGN_m7', 127),
+-    ('L025_m7/THERMAL_AGN_m7', 56),
++# fig, axs = plt.subplots(
++#     1, 3, sharey=True,
++#     figsize=(9/4 * PLOT_SIZE, PLOT_SIZE),
++#     constrained_layout=False,
++#     gridspec_kw={'width_ratios': [1, 1, 0.1], 'wspace': 0},
++# )
++# axs[2].axis('off')
++#
++
++import matplotlib.gridspec as gridspec
++fig = plt.figure(figsize=(2.1 * PLOT_SIZE, PLOT_SIZE), constrained_layout=False)
++gs = gridspec.GridSpec(1, 4, width_ratios=[1, 1, 0.05, 0.05], wspace=0, figure=fig)
++
++
++ax1 = fig.add_subplot(gs[0])
++ax2 = fig.add_subplot(gs[1], sharey=ax1)
++axs = [ax1, ax2]
++ax2.tick_params(left=False, labelleft=False)
++cax = fig.add_subplot(gs[3])
++
++plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
++
++for i_ax, (run, snap_nr) in enumerate([
++    # ('L012_m7/THERMAL_AGN_m7', 127),
++    # ('L012_m7/THERMAL_AGN_m7', 56),
+     # ('L100_m6/THERMAL_AGN_m6', 127),
+     # ('L100_m6/THERMAL_AGN_m6', 56),
+-    ]:
++    ('L0200N3008/Thermal', 127),
++    ('L0200N3008/Thermal', 56),
++    ]):
+     colibre_dir = '/cosma8/data/dp004/colibre/Runs'
++    # colibre_dir = '/cosma8/data/dp004/jlvc76/COLIBRE/ScienceRuns'
+     snap = sw.load(f'{colibre_dir}/{run}/snapshots/colibre_{snap_nr:04}/colibre_{snap_nr:04}.hdf5')
+     redshift = int(round(snap.metadata.redshift, 0))
+ 
+-    fig, ax = plt.subplots(1, figsize=(5/4 * PLOT_SIZE, PLOT_SIZE), constrained_layout=False)
++    ax = axs[i_ax]
+     ax.loglog()
+ 
+-    plt.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15)
+     ax.tick_params(which="both", width=TICK_WIDTH)
+     ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+     ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+@@ -122,36 +148,44 @@ for run, snap_nr in [
+     ax.plot(10**2, 10**4, color=color, ls='-', label='m5', lw=LINE_WIDTH, path_effects=path_effects)
+ 
+     # Line styles
+-    ax.plot(10**2, 10**4, 'k-', label=r'$\rm M_{J,soft} = \langle N_{ngb} \rangle \; m_g$', lw=LINE_WIDTH)
+-    ax.plot(10**2, 10**4, 'k:', label=r'$\rm M_J = \langle N_{ngb} \rangle \; m_g$', lw=LINE_WIDTH)
++    ax.plot(10**2, 10**4, 'k-', label=r'$M_\mathrm{J,soft} = \langle N_\mathrm{ngb} \rangle \; m_\mathrm{g}$', lw=LINE_WIDTH)
++    ax.plot(10**2, 10**4, 'k:', label=r'$M_\mathrm{J} = \langle N_\mathrm{ngb} \rangle \; m_\mathrm{g}$', lw=LINE_WIDTH)
+ 
+     ########### Adding simulation data
+-
+-    nh = np.log10((snap.gas.densities.to_physical() / unyt.mh).to(unyt.cm ** -3).value)
+-    T = np.log10(snap.gas.temperatures.to_physical().to("K").value)
+-    total_mass = np.sum(snap.gas.masses)
+-    mass_fraction = (snap.gas.masses / total_mass).value
+-
++    data_dir = f"{run.replace('/', '_')}_{snap_nr}"
+     n_bin = 256
+     density_bounds = np.array([10 ** (-9.5), 1e8])            # nh/cm^3
+     temperature_bounds = np.array([10 ** (1), 10 ** (12)])    # K
+-    x_bins = np.linspace(
+-        np.log10(density_bounds[0]), 
+-        np.log10(density_bounds[1]), 
+-        n_bin,
+-    )
+-    y_bins = np.linspace(
+-        np.log10(temperature_bounds[0]), 
+-        np.log10(temperature_bounds[1]), 
+-        n_bin,
+-    )
+-    H_norm, x_edges, y_edges = np.histogram2d(
+-        nh, 
+-        T,
+-        bins=[x_bins, y_bins],
+-        weights=mass_fraction
+-    )
+-    hist = H_norm.T
++
++    # nh = np.log10((snap.gas.densities.to_physical() / unyt.mh).to(unyt.cm ** -3).value)
++    # T = np.log10(snap.gas.temperatures.to_physical().to("K").value)
++    # total_mass = np.sum(snap.gas.masses)
++    # mass_fraction = (snap.gas.masses / total_mass).value
++    #
++    # x_bins = np.linspace(
++    #     np.log10(density_bounds[0]), 
++    #     np.log10(density_bounds[1]), 
++    #     n_bin,
++    # )
++    # y_bins = np.linspace(
++    #     np.log10(temperature_bounds[0]), 
++    #     np.log10(temperature_bounds[1]), 
++    #     n_bin,
++    # )
++    # H_norm, x_edges, y_edges = np.histogram2d(
++    #     nh, 
++    #     T,
++    #     bins=[x_bins, y_bins],
++    #     weights=mass_fraction
++    # )
++    # hist = H_norm.T
++    # os.makedirs(data_dir, exist_ok=True)
++    # np.save(f'{data_dir}/hist', hist)
++    # np.save(f'{data_dir}/x_edges', x_edges)
++    # np.save(f'{data_dir}/y_edges', y_edges)
++    hist = np.load(f'{data_dir}/hist.npy')
++    x_edges = np.load(f'{data_dir}/x_edges.npy')
++    y_edges = np.load(f'{data_dir}/y_edges.npy')
+ 
+     # Colourbar
+     vmin = 10**-9
+@@ -163,22 +197,26 @@ for run, snap_nr in [
+         np.ma.array(hist, mask=(hist==0)), 
+         norm=norm
+     )
+-    cbar = fig.colorbar(mappable, ax=ax)
+-    cbar.set_label(label='Mass fraction', fontsize=LABEL_SIZE)
+-    cbar.ax.tick_params(which="both", width=TICK_WIDTH)
+-    cbar.ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
+-    cbar.ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
+-    cbar.ax.tick_params(labelsize=LABEL_SIZE)
++    if i_ax == 1:
++        cbar = fig.colorbar(mappable, ax=ax1, cax=cax)
++        cbar.set_label(label='Mass fraction', fontsize=LABEL_SIZE)
++        cbar.ax.tick_params(which="both", width=TICK_WIDTH)
++        cbar.ax.tick_params(which="major", length=TICK_LENGTH_MAJOR)
++        cbar.ax.tick_params(which="minor", length=TICK_LENGTH_MINOR)
++        cbar.ax.tick_params(labelsize=LABEL_SIZE)
+ 
+     # Legends and labels
+     handles, labels = ax.get_legend_handles_labels()
+-    legend1 = ax.legend(handles[:3], labels[:3], loc='upper right', fontsize=LEGEND_SIZE)
+-    legend2 = ax.legend(handles[3:], labels[3:], loc='upper left', fontsize=LEGEND_SIZE)
+-    ax.add_artist(legend1)
+-    ax.add_artist(legend2)
++    if i_ax == 1:
++        legend1 = ax.legend(handles[:3], labels[:3], loc='upper right', fontsize=LEGEND_SIZE)
++        ax.add_artist(legend1)
++    if i_ax == 0:
++        legend2 = ax.legend(handles[3:], labels[3:], loc='upper left', fontsize=LEGEND_SIZE)
++        ax.add_artist(legend2)
+     ax.set_title(f'$z={redshift}$', fontsize=LABEL_SIZE)
+-    ax.set_xlabel(r"Density [$n_\mathrm{H}$ cm$^{-3}$]", fontsize=LABEL_SIZE)
+-    ax.set_ylabel("Temperature [K]", fontsize=LABEL_SIZE)
++    ax.set_xlabel(r"Density $n_\mathrm{H}$ [cm$^{-3}$]", fontsize=LABEL_SIZE)
++    if i_ax == 0:
++        ax.set_ylabel("Temperature [K]", fontsize=LABEL_SIZE)
+ 
+     # Add minor ticks and set axis limits
+     major_xticks = ax.get_xticks()
+@@ -192,8 +230,8 @@ for run, snap_nr in [
+     ax.set_xlim(density_bounds)
+     ax.set_ylim(temperature_bounds)
+ 
+-    # Save
+-    outputname = run.replace('/', '_') + f'_s{snap_nr}_grav_instability.png'
+-    fig.savefig(outputname, dpi = 250)
+-    plt.close()
++# Save
++outputname = run.replace('/', '_') + f'_grav_instability.png'
++fig.savefig(outputname, dpi=250)
++plt.close()
+ 

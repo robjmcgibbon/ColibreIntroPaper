@@ -1,4 +1,13 @@
 def get_sim_plot_style(sim):
+
+    special = {
+        'L0025N0188/Thermal_rerun': ('L025m7', '#D12424', '-'),
+        'L0025N0376/Thermal': ('L025m6', '#FF9F6E', '-'),
+        'L0025N0752/Thermal': ('L025m5', '#C4E8FF', '-'),
+    }
+    if sim in special:
+        return special[sim]
+
     # Extract box size
     assert sim[5] != '/', 'Run directory must be in LXXX_mY format'
     label = sim[:4]
@@ -13,7 +22,7 @@ def get_sim_plot_style(sim):
         color = '#D12424'
         label += 'm7'
     else:
-        raise NotImplementedError('Sim must contain m5/m6/m7 (e.g. L50_m5/THERMAL')
+        raise NotImplementedError('Sim must contain m5/m6/m7 (e.g. L050_m5/THERMAL')
 
     if 'THERMAL' in sim:
         ls = '-'

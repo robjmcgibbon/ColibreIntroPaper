@@ -1,0 +1,303 @@
+diff --git a/phase_diagrams.py b/phase_diagrams.py
+index b6520fa..0a0fd99 100644
+--- a/phase_diagrams.py
++++ b/phase_diagrams.py
+@@ -46,11 +46,13 @@ parameters = {
+     # These are attached as metadata to the data file
+     'n_bin': 256,
+     'density_bounds': np.array([10 ** (-9.5), 1e7]),            # nh/cm^3
+-    'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),   # K
++    'temperature_bounds': np.array([10 ** (0), 10 ** (10.1)]),  # K
++    # TODO: 9.5 is the old upper limit (needed for the density plot)
++    # 'temperature_bounds': np.array([10 ** (0), 10 ** (9.5)]),  # K
+     'pressure_bounds': np.array([10 ** (-8.0), 10 ** 16.0]),    # K/cm^1
+     # Plotting only
+     'density_xlim': np.array([10 ** (-9.5), 1e7]),              # nh/cm^3
+-    'temperature_ylim': np.array([10 ** (0), 10 ** (9.5)]),     # K
++    'temperature_ylim': np.array([10 ** (0), 10 ** (10.5)]),    # K
+     'pressure_ylim': np.array([10 ** (-8.0), 10 ** 12.0]),      # K/cm^1
+     'metallicity_cbar_lim': np.array([-3, 0.5]),                # dimensionless (log)
+     'solar_metal_frac_cbar_lim': np.array([1e-3, 2e0]),       # dimensionless
+@@ -86,36 +88,36 @@ plot_names = {
+         'density_bounds',
+         'pressure_bounds',
+     ],
+-    'density_temperature_solar_metal_frac': [
+-        'n_bin',
+-        'density_bounds',
+-        'temperature_bounds',
+-    ],
+-    'density_temperature_dust_to_metal': [
+-        'n_bin',
+-        'density_bounds',
+-        'temperature_bounds',
+-    ],
+-    'density_temperature_small_to_large': [
+-        'n_bin',
+-        'density_bounds',
+-        'temperature_bounds',
+-    ],
+-    'density_temperature_HI_frac': [
+-        'n_bin',
+-        'density_bounds',
+-        'temperature_bounds',
+-    ],
+-    'density_temperature_H2_frac': [
+-        'n_bin',
+-        'density_bounds',
+-        'temperature_bounds',
+-    ],
+-    'density_temperature_100Myr_feedback_frac': [
+-        'n_bin',
+-        'density_bounds',
+-        'temperature_bounds',
+-    ],
++    # 'density_temperature_solar_metal_frac': [
++    #     'n_bin',
++    #     'density_bounds',
++    #     'temperature_bounds',
++    # ],
++    # 'density_temperature_dust_to_metal': [
++    #     'n_bin',
++    #     'density_bounds',
++    #     'temperature_bounds',
++    # ],
++    # 'density_temperature_small_to_large': [
++    #     'n_bin',
++    #     'density_bounds',
++    #     'temperature_bounds',
++    # ],
++    # 'density_temperature_HI_frac': [
++    #     'n_bin',
++    #     'density_bounds',
++    #     'temperature_bounds',
++    # ],
++    # 'density_temperature_H2_frac': [
++    #     'n_bin',
++    #     'density_bounds',
++    #     'temperature_bounds',
++    # ],
++    # 'density_temperature_100Myr_feedback_frac': [
++    #     'n_bin',
++    #     'density_bounds',
++    #     'temperature_bounds',
++    # ],
+ }
+ # Check required parameters are valid
+ for plot_name, required_params in plot_names.items():
+@@ -144,14 +146,22 @@ def load_dataset(dataset_name):
+     elif dataset_name == 'small_dust_frac':
+         dfracs = np.zeros_like(snap.gas.masses.value)
+         for col in snap.gas.dust_mass_fractions.named_columns:
+-            if 'Small' in col:
+-                dfracs += getattr(snap.gas.dust_mass_fractions, col).value
++            with h5py.File(snap_filename, 'r') as file:
++                i_col = [e.decode() for e in file['SubgridScheme/NamedColumns/DustMassFractions']].index(col)
++                if 'Small' in col:
++                    dfracs += file['PartType0/DustMassFractions'][:, i_col]
++            # if 'Small' in col:
++                # dfracs += getattr(snap.gas.dust_mass_fractions, col).value
+         datasets[dataset_name] = dfracs
+     elif dataset_name == 'large_dust_frac':
+         dfracs = np.zeros_like(snap.gas.masses.value)
+         for col in snap.gas.dust_mass_fractions.named_columns:
+-            if 'Large' in col:
+-                dfracs += getattr(snap.gas.dust_mass_fractions, col).value
++            with h5py.File(snap_filename, 'r') as file:
++                i_col = [e.decode() for e in file['SubgridScheme/NamedColumns/DustMassFractions']].index(col)
++                if 'Large' in col:
++                    dfracs += file['PartType0/DustMassFractions'][:, i_col]
++            # if 'Large' in col:
++                # dfracs += getattr(snap.gas.dust_mass_fractions, col).value
+         datasets[dataset_name] = dfracs
+     elif dataset_name == 'small_dust_mass':
+         datasets[dataset_name] = load_dataset('small_dust_frac') * load_dataset('mass')
+@@ -173,12 +183,21 @@ def load_dataset(dataset_name):
+         datasets[dataset_name] = metal_frac * mass
+     # HI / H2
+     elif dataset_name == 'hydrogen_frac':
+-        datasets[dataset_name] = snap.gas.element_mass_fractions.hydrogen.value
++        with h5py.File(snap_filename, 'r') as file:
++            i_col = [e.decode() for e in file['SubgridScheme/NamedColumns/ElementMassFractions']].index('Hydrogen')
++            datasets[dataset_name] = file['PartType0/ElementMassFractions'][:, i_col]
++        # datasets[dataset_name] = snap.gas.element_mass_fractions.hydrogen.value
+     elif dataset_name == 'HI_mass':
+-        mfrac = snap.gas.species_fractions.HI.value * load_dataset('hydrogen_frac')
++        with h5py.File(snap_filename, 'r') as file:
++            i_col = [e.decode() for e in file['SubgridScheme/NamedColumns/SpeciesFractions']].index('HI')
++            mfrac = file['PartType0/SpeciesFractions'][:, i_col] * load_dataset('hydrogen_frac')
++        # mfrac = snap.gas.species_fractions.HI.value * load_dataset('hydrogen_frac')
+         datasets[dataset_name] = mfrac * load_dataset('mass')
+     elif dataset_name == 'H2_mass':
+-        mfrac = 2 * snap.gas.species_fractions.H2.value * load_dataset('hydrogen_frac')
++        with h5py.File(snap_filename, 'r') as file:
++            i_col = [e.decode() for e in file['SubgridScheme/NamedColumns/SpeciesFractions']].index('H2')
++            mfrac = 2 * file['PartType0/SpeciesFractions'][:, i_col] * load_dataset('hydrogen_frac')
++        # mfrac = 2 * snap.gas.species_fractions.H2.value * load_dataset('hydrogen_frac')
+         datasets[dataset_name] = mfrac * load_dataset('mass')
+     # Feedback times
+     elif dataset_name == 'last_feedback_a':
+@@ -282,6 +301,7 @@ if args.generate_data:
+             create_2Dhistogram(plot_name, 'density', 'temperature')
+         elif plot_name == 'density_pressure':
+             create_2Dhistogram(plot_name, 'density', 'pressure')
++            del datasets['pressure']
+         elif plot_name == 'density_temperature_solar_metal_frac':
+             create_2Dhistogram(
+                 plot_name, 
+@@ -290,6 +310,7 @@ if args.generate_data:
+                 dataset_name_weights_1='mass',
+                 dataset_name_weights_2='solar_metal_mass',
+             )
++            del datasets['solar_metal_mass']
+         elif plot_name == 'density_temperature_dust_to_metal':
+             create_2Dhistogram(
+                 plot_name, 
+@@ -298,6 +319,11 @@ if args.generate_data:
+                 dataset_name_weights_1='metal_mass',
+                 dataset_name_weights_2='dust_mass',
+             )
++            del datasets['metal_mass']
++            del datasets['metal_frac']
++            del datasets['dust_mass']
++            del datasets['small_dust_frac']
++            del datasets['large_dust_frac']
+         elif plot_name == 'density_temperature_small_to_large':
+             create_2Dhistogram(
+                 plot_name, 
+@@ -306,6 +332,8 @@ if args.generate_data:
+                 dataset_name_weights_1='large_dust_mass',
+                 dataset_name_weights_2='small_dust_mass',
+             )
++            del datasets['large_dust_mass']
++            del datasets['small_dust_mass']
+         elif plot_name == 'density_temperature_HI_frac':
+             create_2Dhistogram(
+                 plot_name, 
+@@ -314,6 +342,7 @@ if args.generate_data:
+                 dataset_name_weights_1='mass',
+                 dataset_name_weights_2='HI_mass',
+             )
++            del datasets['HI_mass']
+         elif plot_name == 'density_temperature_H2_frac':
+             create_2Dhistogram(
+                 plot_name, 
+@@ -322,6 +351,7 @@ if args.generate_data:
+                 dataset_name_weights_1='mass',
+                 dataset_name_weights_2='H2_mass',
+             )
++            del datasets['H2_mass']
+         elif plot_name == 'density_temperature_100Myr_feedback_frac':
+             create_2Dhistogram(
+                 plot_name, 
+@@ -379,22 +409,26 @@ cbar_labels = {
+     'density_temperature_solar_metal_frac': r"$\left<Z/\rm{Z_{\odot}}\right>$",
+     'density_temperature_dust_to_metal': f"Dust-to-metal ratio",
+     'density_temperature_small_to_large': f"Small-to-large dust grain mass ratio",
+-    'density_temperature_HI_frac': r"$\rm{H}\,\textsc{i}$ Mass Fraction",
+-    'density_temperature_H2_frac': r"$\rm{H_2}$ Mass Fraction",
++    'density_temperature_HI_frac': r"$\rm{H}\,\textsc{i}$ mass fraction",
++    'density_temperature_H2_frac': r"$\rm{H_2}$ mass fraction",
+     'density_temperature_100Myr_feedback_frac': r"Fraction received feedback (last 100 Myr)",
+ }
+ 
+-cet_L20 = cc.cm.CET_L20
+-cet_L20.set_under('black')
++# TODO: Original
++# cet_L20 = cc.cm.CET_L20
++# cet_L20.set_under('black')
++# TODO: Nw
++cet_L20 = cc.cm.CET_L20_r
++cet_L20.set_over('black')
+ cmaps = {
+     'density_temperature': plt.colormaps['plasma'],
+     'density_pressure': plt.colormaps['plasma'],
+-    'density_temperature_solar_metal_frac': cc.cm.CET_L4,
+-    'density_temperature_dust_to_metal': cmr.dusk,
+-    'density_temperature_small_to_large': plt.colormaps['viridis'],
++    'density_temperature_solar_metal_frac': cc.cm.CET_L4_r,
++    'density_temperature_dust_to_metal': cmr.dusk_r,
++    'density_temperature_small_to_large': plt.colormaps['viridis_r'],
+     'density_temperature_HI_frac': cet_L20,
+     'density_temperature_H2_frac': cet_L20,
+-    'density_temperature_100Myr_feedback_frac': plt.colormaps['inferno'],
++    'density_temperature_100Myr_feedback_frac': plt.colormaps['inferno_r'],
+ }
+ 
+ def plot_2Dhistogram(plot_data, plot_name, dataset_name_x, dataset_name_y):
+@@ -404,6 +438,10 @@ def plot_2Dhistogram(plot_data, plot_name, dataset_name_x, dataset_name_y):
+     if cbar_lim_name in parameters:
+         vmin = parameters[cbar_lim_name][0]
+         vmax = parameters[cbar_lim_name][1]
++    elif plot_name in ['density_temperature', 'density_pressure']:
++        # Number of particles for the L200m6
++        vmin = 1
++        vmax = 10**8
+     else:
+         vmin = 1
+         vmax = np.max(data['hist'])
+@@ -452,7 +490,7 @@ for plot_name in plot_names:
+     ax.set_xlabel(r"Density $n_\mathrm{H}$ [cm$^{-3}$]", fontsize=LABEL_SIZE)
+     if plot_name == 'density_pressure':
+         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'pressure')
+-        ax.set_ylabel("Pressure $P / \\mathrm{k_B}$ [K cm$^{-3}$]", fontsize=LABEL_SIZE)
++        ax.set_ylabel("Pressure $P / k_\\mathrm{B}$ [K cm$^{-3}$]", fontsize=LABEL_SIZE)
+     elif 'density_temperature' in plot_name:
+         mappable = plot_2Dhistogram(plot_data, plot_name, 'density', 'temperature')
+         ax.set_ylabel("Temperature [K]", fontsize=LABEL_SIZE)
+@@ -460,16 +498,16 @@ for plot_name in plot_names:
+         raise NotImplementedError
+ 
+     # Add name of simulation to plots
+-    ax.text(
+-        0.025,
+-        0.975,
+-        args.sim,
+-        ha="left",
+-        va="top",
+-        transform=ax.transAxes,
+-        fontsize=5,
+-        in_layout=False,
+-    )
++    # ax.text(
++    #     0.025,
++    #     0.975,
++    #     args.sim,
++    #     ha="left",
++    #     va="top",
++    #     transform=ax.transAxes,
++    #     fontsize=5,
++    #     in_layout=False,
++    # )
+ 
+     cbar = fig.colorbar(mappable, ax=ax)
+     cbar.set_label(label=cbar_labels[plot_name], fontsize=LABEL_SIZE)
+@@ -481,12 +519,16 @@ for plot_name in plot_names:
+     if plot_name == 'density_temperature':
+         for letter, rho, T, letter_rho, letter_T in [
+                 ('A', 1e-7, 2e3, 1e-7, 1e2),
+-                ('B', 5e-6, 1e6, 5e-9, 7e8),
+-                ('C', 3e-4, 2.5e7, 1e-1, 5e8),
+-                ('D', 3e-4, 2e4, 1e-5, 5e2),
++                # ('B', 5e-6, 1e6, 5e-9, 7e8),
++                ('B', 5e-6, 1e6, 5e-9, 3e9),
++                # ('C', 3e-4, 2.5e7, 1e-1, 5e8),
++                ('C', 3e-4, 2.5e7, 5e-2, 1e9),
++                # ('D', 3e-4, 2e4, 1e-5, 5e2),
++                ('D', 3e-4, 2e4, 7e-6, 5e2),
+                 ('E', 1e-2, 8e3, 1e2, 5e5),
+                 ('F', 1e-2, 8e1, 1e-2, 5e0),
+-                ('G', 1e1, 1.5e7, 1e4, 1e8),
++                # ('G', 1e1, 1.5e7, 1e4, 1e8),
++                ('G', 1e1, 1.5e7, 5e4, 1e8),
+                 ('H', 1e2, 1e4, 1e5, 1e5),
+                 ('I', 1e2, 8e1, 1e2, 5e0),
+             ]:
+@@ -549,6 +591,7 @@ for i_plot, plot_name in enumerate([
+         'density_temperature',
+         'density_pressure',
+     ]):
++    continue
+     ax = axs[i_plot]
+ 
+     ax.set_xlabel(r"Density $n_\mathrm{H}$ [cm$^{-3}$]", fontsize=LABEL_SIZE)
